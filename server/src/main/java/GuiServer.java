@@ -1,74 +1,74 @@
-
-import java.util.HashMap;
-
-import Model.Message;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
-public class GuiServer extends Application{
+import java.io.OutputStream;
+import java.io.PrintStream;
 
-	HashMap<String, Scene> sceneMap;
-	Server serverConnection;
+public class GuiServer extends Application {
 
-	ListView<String> listItems;
+    ListView<String> listItems;
 
+    public static void main(String[] args) {
+        launch(args);
+    }
 
-	public static void main(String[] args) {
-		launch(args);
-	}
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        listItems = new ListView<>();
 
-	@Override
-	public void start(Stage primaryStage) throws Exception {
-		listItems = new ListView<String>();
+        // Redirect System.out to our ListView
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(new OutputStream() {
+            private StringBuilder buffer = new StringBuilder();
 
-		serverConnection = new Server(data -> {
-			Platform.runLater(()->{
-				if (data instanceof Message) {
-					Message message = (Message) data;
-					listItems.getItems().add(message.getType() + " | " + message.getSender() + ": " + message.getContent());
-				} else {
-					listItems.getItems().add(data.toString());
-				}
-			});
-		});
-
-		sceneMap = new HashMap<String, Scene>();
-
-		sceneMap.put("server",  createServerGui());
-
-		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
             @Override
-            public void handle(WindowEvent t) {
-                Platform.exit();
-                System.exit(0);
+            public void write(int b) {
+                if (b == '\n') {
+                    final String line = buffer.toString();
+                    buffer = new StringBuilder();
+                    Platform.runLater(() -> {
+                        listItems.getItems().add(line);
+                        // Auto-scroll to bottom
+                        listItems.scrollTo(listItems.getItems().size() - 1);
+                    });
+                    originalOut.println(line);
+                } else if (b != '\r') {
+                    buffer.append((char) b);
+                }
             }
+        }, true));
+
+        // Start the server in a background thread
+        Thread serverThread = new Thread(() -> {
+            Server server = new Server(5555);
+            server.start();
         });
+        serverThread.setDaemon(true);
+        serverThread.start();
 
-		primaryStage.setScene(sceneMap.get("server"));
-		primaryStage.setTitle("This is the Server");
-		primaryStage.show();
+        primaryStage.setScene(createServerGui());
+        primaryStage.setTitle("Checkers Server");
+        primaryStage.setOnCloseRequest(e -> {
+            Platform.exit();
+            System.exit(0);
+        });
+        primaryStage.show();
+    }
 
-	}
+    private Scene createServerGui() {
+        BorderPane pane = new BorderPane();
+        pane.setPadding(new Insets(20));
+        pane.setStyle("-fx-background-color: #2b2b2b;");
 
-	public Scene createServerGui() {
+        listItems.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 13; " +
+                           "-fx-control-inner-background: #1e1e1e; -fx-text-fill: #00ff00;");
+        pane.setCenter(listItems);
 
-		BorderPane pane = new BorderPane();
-		pane.setPadding(new Insets(70));
-		pane.setStyle("-fx-background-color: coral");
-
-		pane.setCenter(listItems);
-		pane.setStyle("-fx-font-family: 'serif'");
-		return new Scene(pane, 500, 400);
-
-
-	}
-
-
+        return new Scene(pane, 600, 450);
+    }
 }
