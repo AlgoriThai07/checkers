@@ -1,51 +1,106 @@
-package Model;
+package model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 public class Message implements Serializable {
     private static final long serialVersionUID = 42L;
 
-    private String type;
-    private String sender;
-    private String receiver;
-    private String groupName;
-    private String content;
-    private ArrayList<String> members;
-    private boolean success;
+    public enum MessageType {
+        REGISTER,
+        LOGIN,
+        AUTH_SUCCESS,
+        AUTH_FAIL,
+        QUEUE,
+        GAME_START,
+        MOVE,
+        GAME_UPDATE,
+        INVALID_MOVE,
+        GAME_OVER,
+        CHAT,
+        PLAY_AGAIN,
+        QUIT
+    }
 
-    public Message(String type, String sender, String receiver, String groupName, String content, ArrayList<String> members, boolean success) {
+    private MessageType type;
+    private String sender;
+    private GameState gameState;
+    private Move move;
+    private String content;
+
+    // Constructor: MessageType only
+    public Message(MessageType type) {
+        this.type = type;
+    }
+
+    // Constructor: MessageType + content
+    public Message(MessageType type, String content) {
+        this.type = type;
+        this.content = content;
+    }
+
+    // Constructor: MessageType + GameState
+    public Message(MessageType type, GameState gameState) {
+        this.type = type;
+        this.gameState = gameState;
+    }
+
+    // Constructor: MessageType + Move
+    public Message(MessageType type, Move move) {
+        this.type = type;
+        this.move = move;
+    }
+
+    // Full constructor
+    public Message(MessageType type, String sender, GameState gameState, Move move, String content) {
         this.type = type;
         this.sender = sender;
-        this.receiver = receiver;
-        this.groupName = groupName;
+        this.gameState = gameState;
+        this.move = move;
         this.content = content;
-        this.members = members;
-        this.success = success;
     }
 
-    public String getType() {
+    public MessageType getType() {
         return type;
     }
+
+    public void setType(MessageType type) {
+        this.type = type;
+    }
+
     public String getSender() {
         return sender;
     }
-    public String getReceiver() {
-        return receiver;
+
+    public void setSender(String sender) {
+        this.sender = sender;
     }
-    public String getGroupName() {
-        return groupName;
+
+    public GameState getGameState() {
+        return gameState;
     }
+
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
+    }
+
+    public Move getMove() {
+        return move;
+    }
+
+    public void setMove(Move move) {
+        this.move = move;
+    }
+
     public String getContent() {
         return content;
     }
-    public ArrayList<String> getMembers() {
-        return members;
+
+    public void setContent(String content) {
+        this.content = content;
     }
 
     @Override
     public String toString() {
-        return "Model.Message [type=" + type + ", sender=" + sender + ", receiver=" + receiver + ", groupName=" + groupName + ", content=" + content + ", members=" + members + ", success=" + success + "]";
+        return "Message[type=" + type + ", sender=" + sender + ", content=" + content + "]";
     }
 }
-
