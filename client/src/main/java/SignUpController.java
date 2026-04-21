@@ -12,17 +12,17 @@ import javafx.scene.text.FontWeight;
 import model.Message;
 import model.Message.MessageType;
 
-public class LoginController {
+public class SignUpController {
 
     private GuiClient app;
 
     private TextField usernameField;
     private PasswordField passwordField;
+    private PasswordField confirmPasswordField;
     private Label errorLabel;
-    private Button loginButton;
-    private Button signupLink;
+    private Button signUpButton;
 
-    public LoginController(GuiClient app) {
+    public SignUpController(GuiClient app) {
         this.app = app;
     }
 
@@ -37,9 +37,13 @@ public class LoginController {
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 36));
         titleLabel.getStyleClass().add("title");
 
+        Label subtitleLabel = new Label("Create an account");
+        subtitleLabel.setFont(Font.font("System", 14));
+        subtitleLabel.getStyleClass().add("subtitle");
+
         VBox titleBox = new VBox(8);
         titleBox.setAlignment(Pos.CENTER);
-        titleBox.getChildren().addAll(titleLabel);
+        titleBox.getChildren().addAll(titleLabel, subtitleLabel);
 
         // Form container
         VBox formBox = new VBox(20);
@@ -55,7 +59,7 @@ public class LoginController {
         usernameLabel.getStyleClass().add("field-label");
 
         usernameField = new TextField();
-        usernameField.setPromptText("Enter your username");
+        usernameField.setPromptText("Choose a username");
         usernameField.setPrefHeight(40);
         usernameField.getStyleClass().add("text-field");
 
@@ -68,11 +72,24 @@ public class LoginController {
         passwordLabel.getStyleClass().add("field-label");
 
         passwordField = new PasswordField();
-        passwordField.setPromptText("Enter your password");
+        passwordField.setPromptText("Choose a password");
         passwordField.setPrefHeight(40);
         passwordField.getStyleClass().add("text-field");
 
         passwordBox.getChildren().addAll(passwordLabel, passwordField);
+
+        // Confirm Password field
+        VBox confirmPasswordBox = new VBox(8);
+        Label confirmPasswordLabel = new Label("Confirm Password");
+        confirmPasswordLabel.setFont(Font.font("System", 13));
+        confirmPasswordLabel.getStyleClass().add("field-label");
+
+        confirmPasswordField = new PasswordField();
+        confirmPasswordField.setPromptText("Confirm your password");
+        confirmPasswordField.setPrefHeight(40);
+        confirmPasswordField.getStyleClass().add("text-field");
+
+        confirmPasswordBox.getChildren().addAll(confirmPasswordLabel, confirmPasswordField);
 
         // Error label
         errorLabel = new Label();
@@ -80,52 +97,55 @@ public class LoginController {
         errorLabel.setVisible(false);
         errorLabel.setManaged(false);
 
-        // Login button
-        loginButton = new Button("LOGIN");
-        loginButton.setPrefHeight(45);
-        loginButton.setMaxWidth(Double.MAX_VALUE);
-        loginButton.getStyleClass().add("primary-button");
-        loginButton.setOnAction(e -> handleLogin());
+        // Sign Up button
+        signUpButton = new Button("SIGN UP");
+        signUpButton.setPrefHeight(45);
+        signUpButton.setMaxWidth(Double.MAX_VALUE);
+        signUpButton.getStyleClass().add("primary-button");
+        signUpButton.setOnAction(e -> handleSignUp());
 
-        // Make Enter key trigger login
-        passwordField.setOnAction(e -> handleLogin());
+        // Make Enter key trigger sign up
+        confirmPasswordField.setOnAction(e -> handleSignUp());
 
-        formBox.getChildren().addAll(usernameBox, passwordBox, errorLabel, loginButton);
+        formBox.getChildren().addAll(usernameBox, passwordBox, confirmPasswordBox, errorLabel, signUpButton);
 
-        // Sign up link
-        HBox signupBox = new HBox(5);
-        signupBox.setAlignment(Pos.CENTER);
+        // Login link
+        HBox loginBox = new HBox(5);
+        loginBox.setAlignment(Pos.CENTER);
 
-        Label signupPrompt = new Label("Don't have an account?");
-        signupPrompt.setFont(Font.font("System", 12));
-        signupPrompt.getStyleClass().add("secondary-text");
+        Label loginPrompt = new Label("Already have an account?");
+        loginPrompt.setFont(Font.font("System", 12));
+        loginPrompt.getStyleClass().add("secondary-text");
 
-        signupLink = new Button("Sign Up");
-        signupLink.getStyleClass().add("link-button");
-        signupLink.setOnAction(e -> handleSignUp());
+        Button loginLink = new Button("Login");
+        loginLink.getStyleClass().add("link-button");
+        loginLink.setOnAction(e -> handleLogin());
 
-        signupBox.getChildren().addAll(signupPrompt, signupLink);
+        loginBox.getChildren().addAll(loginPrompt, loginLink);
 
-        root.getChildren().addAll(titleBox, formBox, signupBox);
+        root.getChildren().addAll(titleBox, formBox, loginBox);
 
-        Scene scene = new Scene(root, 400, 500);
+        Scene scene = new Scene(root, 400, 550);
         try {
             scene.getStylesheets().add(getClass().getResource("/login-styles.css").toExternalForm());
         } catch (Exception e) {
-            System.out.println("Could not load login-styles.css");
+            System.out.println("Could not load css");
             e.printStackTrace();
         }
         return scene;
     }
 
-    private void handleLogin() {
+    private void handleSignUp() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
+        String confirmPassword = confirmPasswordField.getText();
 
+        // Clear previous error
         errorLabel.setVisible(false);
         errorLabel.setManaged(false);
 
-        if (username.isEmpty() || password.isEmpty()) {
+        // Validation
+        if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             showError("Please fill in all fields");
             return;
         }
@@ -135,26 +155,34 @@ public class LoginController {
             return;
         }
 
-        System.out.println("Login attempt - Username: " + username);
-        // Connect to server for authentication
+        if (password.length() < 6) {
+            showError("Password must be at least 6 characters");
+            return;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            showError("Passwords do not match");
+            return;
+        }
+
+        System.out.println("Sign up attempt - Username: " + username);
         app.setUsername(username);
-        Message msg = new Message(MessageType.LOGIN, username + ":" + password);
+        Message msg = new Message(MessageType.REGISTER, username + ":" + password);
         app.send(msg);
 
-        // Disable buttons while loading
-        loginButton.setDisable(true);
-        loginButton.setText("LOGGING IN...");
+        signUpButton.setDisable(true);
+        signUpButton.setText("REGISTERING...");
     }
 
-    private void handleSignUp() {
-        app.switchToScene("signup");
+    private void handleLogin() {
+        app.switchToScene("login");
     }
 
     public void showError(String message) {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
         errorLabel.setManaged(true);
-        loginButton.setDisable(false);
-        loginButton.setText("LOGIN");
+        signUpButton.setDisable(false);
+        signUpButton.setText("SIGN UP");
     }
 }
