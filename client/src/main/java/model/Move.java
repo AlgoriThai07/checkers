@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Move implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 42L;
 
     private Position from;
     private Position to;
