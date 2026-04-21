@@ -32,19 +32,21 @@ public class GameSession {
 
         // Link handlers to this session
         redPlayer.setCurrentSession(this);
+        // If a PvP game
         if (blackPlayer != null) {
             blackPlayer.setCurrentSession(this);
         }
     }
 
     public void startGame() {
+        // Init game
         initializeBoard();
         gameState.setRedPlayer(redPlayer.getUsername());
         gameState.setBlackPlayer(isAIGame ? "AI" : blackPlayer.getUsername());
         gameState.setCurrentTurn("RED");
         gameState.setStatus("IN_PROGRESS");
 
-        // Calculate valid moves for RED (first player)
+        // Calculate valid moves for RED
         gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), "RED"));
 
         // Send GAME_START to both players
@@ -60,7 +62,7 @@ public class GameSession {
 
     private void initializeBoard() {
         PieceType[][] board = new PieceType[8][8];
-
+        // Set all squares to empty first
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 board[r][c] = PieceType.EMPTY;
@@ -88,12 +90,11 @@ public class GameSession {
         gameState.setBoard(board);
     }
 
-    // ========================================
-    // MOVE HANDLING
-    // ========================================
 
     public synchronized void handleMove(ClientHandler sender, Move move) {
+        // Get color of player wanting to move
         String senderColor = getPlayerColor(sender);
+        // If not his turn, not allow to move
         if (senderColor == null || !senderColor.equals(gameState.getCurrentTurn())) {
             sender.sendMessage(new Message(MessageType.INVALID_MOVE, "Not your turn"));
             return;
