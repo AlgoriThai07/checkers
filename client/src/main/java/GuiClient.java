@@ -9,7 +9,6 @@ import javafx.stage.Stage;
 import model.Message;
 import model.Message.MessageType;
 
-
 public class GuiClient extends Application {
 
     HashMap<String, Scene> sceneMap;
@@ -18,8 +17,12 @@ public class GuiClient extends Application {
 
     String username = "";
 
+    LoginController loginController; // ADDED: Controller for our awesome new Figma Login Screen
+    SignUpController signUpController; // ADDED: Controller for our Sign Up Screen
     LobbyController lobbyController;
     GameController gameController;
+    
+    private String currentSceneName = "login";
 
     public static void main(String[] args) {
         launch(args);
@@ -30,9 +33,13 @@ public class GuiClient extends Application {
         this.primaryStage = primaryStage;
         sceneMap = new HashMap<>();
 
+        loginController = new LoginController(this); // ADDED: Instantiate the login controller
+        signUpController = new SignUpController(this); // ADDED: Instantiate the sign up controller
         lobbyController = new LobbyController(this);
         gameController = new GameController(this);
 
+        sceneMap.put("login", loginController.createScene()); // ADDED: Register the login scene
+        sceneMap.put("signup", signUpController.createScene()); // ADDED: Register the sign up scene
         sceneMap.put("lobby", lobbyController.createScene());
         sceneMap.put("game", gameController.createScene());
 
@@ -43,7 +50,7 @@ public class GuiClient extends Application {
         clientConnection.start();
 
         primaryStage.setTitle("Checkers");
-        primaryStage.setScene(sceneMap.get("lobby"));
+        primaryStage.setScene(sceneMap.get("login")); // ADDED/CHANGED: START AT LOGIN INSTEAD OF LOBBY
         primaryStage.setOnCloseRequest(e -> {
             Platform.exit();
             System.exit(0);
@@ -59,10 +66,15 @@ public class GuiClient extends Application {
             switch (message.getType()) {
                 case AUTH_SUCCESS:
                     this.username = message.getSender() != null ? message.getSender() : username;
-                    lobbyController.onAuthSuccess(message);
+                    lobbyController.onAuthSuccess(message); // tell lobby we logged in
+                    switchToScene("lobby"); // ADDED: After login success, automatically SWITCH TO LOBBY
                     break;
                 case AUTH_FAIL:
-                    lobbyController.onAuthFail(message);
+                    if ("login".equals(currentSceneName)) {
+                        loginController.showError(message.getContent() != null ? message.getContent() : "Auth Failed"); 
+                    } else if ("signup".equals(currentSceneName)) {
+                        signUpController.showError(message.getContent() != null ? message.getContent() : "Auth Failed"); 
+                    }
                     break;
                 case GAME_START:
                     gameController.onGameStart(message);
@@ -93,6 +105,7 @@ public class GuiClient extends Application {
     }
 
     public void switchToScene(String sceneName) {
+        currentSceneName = sceneName;
         if (sceneName.equals("lobby")) {
             lobbyController.reset();
         }
