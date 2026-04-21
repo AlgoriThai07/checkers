@@ -110,9 +110,9 @@ public class LoginController {
 
         Scene scene = new Scene(root, 400, 500);
         try {
-            scene.getStylesheets().add(getClass().getResource("/login-styles.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/app-styles.css").toExternalForm());
         } catch (Exception e) {
-            System.out.println("Could not load login-styles.css");
+            System.out.println("Could not load app-styles.css");
             e.printStackTrace();
         }
         return scene;

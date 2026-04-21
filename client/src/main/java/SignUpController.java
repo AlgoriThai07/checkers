@@ -127,7 +127,7 @@ public class SignUpController {
 
         Scene scene = new Scene(root, 400, 550);
         try {
-            scene.getStylesheets().add(getClass().getResource("/login-styles.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/app-styles.css").toExternalForm());
         } catch (Exception e) {
             System.out.println("Could not load css");
             e.printStackTrace();

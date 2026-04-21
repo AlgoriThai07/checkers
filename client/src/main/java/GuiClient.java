@@ -21,6 +21,7 @@ public class GuiClient extends Application {
     SignUpController signUpController; // ADDED: Controller for our Sign Up Screen
     LobbyController lobbyController;
     GameController gameController;
+    MatchmakingController matchmakingController;
     
     private String currentSceneName = "login";
 
@@ -37,11 +38,13 @@ public class GuiClient extends Application {
         signUpController = new SignUpController(this); // ADDED: Instantiate the sign up controller
         lobbyController = new LobbyController(this);
         gameController = new GameController(this);
+        matchmakingController = new MatchmakingController(this);
 
         sceneMap.put("login", loginController.createScene()); // ADDED: Register the login scene
         sceneMap.put("signup", signUpController.createScene()); // ADDED: Register the sign up scene
         sceneMap.put("lobby", lobbyController.createScene());
         sceneMap.put("game", gameController.createScene());
+        sceneMap.put("matchmaking", matchmakingController.createScene());
 
         // Create client connection
         clientConnection = new Client(data -> {
@@ -67,6 +70,7 @@ public class GuiClient extends Application {
                 case AUTH_SUCCESS:
                     this.username = message.getSender() != null ? message.getSender() : username;
                     lobbyController.onAuthSuccess(message); // tell lobby we logged in
+                    matchmakingController.setUsername(this.username);
                     switchToScene("lobby"); // ADDED: After login success, automatically SWITCH TO LOBBY
                     break;
                 case AUTH_FAIL:
@@ -106,6 +110,14 @@ public class GuiClient extends Application {
 
     public void switchToScene(String sceneName) {
         currentSceneName = sceneName;
+        
+        // Timer management
+        if (sceneName.equals("matchmaking")) {
+            matchmakingController.startTimer();
+        } else {
+            matchmakingController.stopTimer();
+        }
+
         if (sceneName.equals("lobby")) {
             lobbyController.reset();
         }

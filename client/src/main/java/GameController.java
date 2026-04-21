@@ -8,16 +8,22 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
 import model.GameState;
 import model.Message;
@@ -28,198 +34,334 @@ import model.Position;
 
 public class GameController {
 
-    private static final int CELL_SIZE = 70;
-
     private GuiClient app;
     private GameState gameState;
     private String myColor; // "RED" or "BLACK"
 
-    // Board UI
+    // Component tracking
     private GridPane boardGrid;
-    private Pane pieceLayer;
-    private StackPane boardStack;
-
+    private StackPane[][] boardCells = new StackPane[8][8];
+    
     // Piece tracking  
     private Position selectedPiece = null;
     private List<Position> highlightedDests = new ArrayList<>();
 
-    // Turn indicator
-    private Label turnLabel;
-    private Label playerInfoLabel;
-
-    // Chat
-    private TextArea chatArea;
+    // UI Tracking
+    private ListView<String> chatList;
     private TextField chatInput;
-    private Button chatSendButton;
+    private Label player1TimeLabel;
+    private Label player2TimeLabel;
+    private Label statusLabel;
+    private Label p1NameLabel;
+    private Label p2NameLabel;
 
     public GameController(GuiClient app) {
         this.app = app;
     }
 
     public Scene createScene() {
-        // ---- Board ----
-        boardGrid = new GridPane();
-        pieceLayer = new Pane();
-        pieceLayer.setPrefSize(8 * CELL_SIZE, 8 * CELL_SIZE);
-        pieceLayer.setMouseTransparent(false);
+        BorderPane root = createGameLayout();
 
-        boardStack = new StackPane(boardGrid, pieceLayer);
-        boardStack.setPrefSize(8 * CELL_SIZE, 8 * CELL_SIZE);
+        Scene scene = new Scene(root, 1200, 700);
+        try {
+            scene.getStylesheets().add(getClass().getResource("/app-styles.css").toExternalForm());
+        } catch (Exception e) {
+            System.err.println("Could not load app-styles.css");
+        }
 
-        // ---- Status labels ----
-        turnLabel = new Label("Waiting for game...");
-        turnLabel.setStyle("-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #e0c068;");
+        return scene;
+    }
 
-        playerInfoLabel = new Label("");
-        playerInfoLabel.setStyle("-fx-font-size: 13; -fx-text-fill: #aaaaaa;");
+    private BorderPane createGameLayout() {
+        BorderPane root = new BorderPane();
+        root.getStyleClass().add("root");
 
-        VBox statusBox = new VBox(5, turnLabel, playerInfoLabel);
-        statusBox.setAlignment(Pos.CENTER_LEFT);
+        // Top bar with player info
+        VBox topSection = createTopSection();
+        root.setTop(topSection);
 
-        // ---- Chat panel ----
+        // Center: Game board
+        VBox centerContent = createBoardSection();
+        root.setCenter(centerContent);
+
+        // Right: Chat and controls
+        VBox rightPanel = createRightPanel();
+        root.setRight(rightPanel);
+
+        return root;
+    }
+
+    private VBox createTopSection() {
+        VBox topSection = new VBox();
+        topSection.getStyleClass().add("top-bar");
+
+        // Player 2 info (opponent - top) - RED forms top
+        HBox player2Info = createPlayerInfo(false);
+
+        // Status label
+        statusLabel = new Label("Waiting for match...");
+        statusLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
+        statusLabel.getStyleClass().add("status-label");
+        statusLabel.setAlignment(Pos.CENTER);
+        statusLabel.setMaxWidth(Double.MAX_VALUE);
+        statusLabel.setPadding(new Insets(10));
+
+        topSection.getChildren().addAll(player2Info, statusLabel);
+
+        return topSection;
+    }
+
+    private HBox createPlayerInfo(boolean isPlayer1) {
+        HBox playerInfo = new HBox(15);
+        playerInfo.setPadding(new Insets(15, 25, 15, 25));
+        playerInfo.setAlignment(Pos.CENTER_LEFT);
+        playerInfo.getStyleClass().add("opponent-player-info");
+
+        // Player name
+        Label nameLabel = new Label(isPlayer1 ? "Player 1 (Black)" : "Player 2 (Red)");
+        nameLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        nameLabel.getStyleClass().add(isPlayer1 ? "username-label" : "title");
+        
+        if (isPlayer1) p1NameLabel = nameLabel;
+        else p2NameLabel = nameLabel;
+
+        // Captured pieces count
+        Label capturedLabel = new Label("Captured: 0");
+        capturedLabel.setFont(Font.font("System", 13));
+        capturedLabel.getStyleClass().add("secondary-text");
+
+        // Spacer
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        // Timer
+        Label timeLabel = new Label("5:00");
+        if (isPlayer1) {
+            player1TimeLabel = timeLabel;
+        } else {
+            player2TimeLabel = timeLabel;
+        }
+        
+        timeLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        timeLabel.getStyleClass().add("timer-label");
+
+        playerInfo.getChildren().addAll(nameLabel, capturedLabel, spacer, timeLabel);
+
+        return playerInfo;
+    }
+
+    private VBox createBoardSection() {
+        VBox boardSection = new VBox(20);
+        boardSection.setPadding(new Insets(20, 20, 20, 20));
+        boardSection.setAlignment(Pos.CENTER);
+
+        // Board container to maintain square aspect ratio
+        StackPane boardContainer = new StackPane();
+        boardContainer.getStyleClass().add("board-container");
+        boardContainer.setMaxSize(600, 600);
+
+        // Create 8x8 board
+        boardGrid = createBoard();
+        boardContainer.getChildren().add(boardGrid);
+
+        // Player 1 info (current player - bottom)
+        HBox player1Info = createPlayerInfo(true);
+
+        boardSection.getChildren().addAll(boardContainer, player1Info);
+
+        return boardSection;
+    }
+
+    private GridPane createBoard() {
+        GridPane grid = new GridPane();
+        grid.getStyleClass().add("checkerboard");
+        grid.setMaxSize(600, 600);
+        grid.setPrefSize(600, 600);
+
+        // Create 8x8 grid
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                StackPane cell = createBoardCell(row, col);
+                boardCells[row][col] = cell;
+                grid.add(cell, col, row);
+            }
+        }
+
+        // Set column and row constraints for equal sizing
+        for (int i = 0; i < 8; i++) {
+            ColumnConstraints colConstraints = new ColumnConstraints();
+            colConstraints.setPercentWidth(12.5);
+            colConstraints.setHgrow(Priority.ALWAYS);
+            grid.getColumnConstraints().add(colConstraints);
+
+            RowConstraints rowConstraints = new RowConstraints();
+            rowConstraints.setPercentHeight(12.5);
+            rowConstraints.setVgrow(Priority.ALWAYS);
+            grid.getRowConstraints().add(rowConstraints);
+        }
+
+        return grid;
+    }
+
+    private StackPane createBoardCell(int row, int col) {
+        StackPane cell = new StackPane();
+        cell.setMinSize(50, 50);
+
+        // Checkerboard pattern
+        boolean isDark = (row + col) % 2 == 1;
+        cell.getStyleClass().add(isDark ? "dark-cell" : "light-cell");
+
+        // Click handler for moves
+        cell.setOnMouseClicked(e -> handleCellClick(row, col));
+
+        return cell;
+    }
+
+    private Circle createPiece(PieceType pt) {
+        boolean isRed = (pt == PieceType.RED || pt == PieceType.RED_KING);
+        boolean isKing = (pt == PieceType.RED_KING || pt == PieceType.BLACK_KING);
+
+        Circle piece = new Circle(25);
+        piece.getStyleClass().add(isRed ? "player1-piece" : "player2-piece");
+
+        if (isRed) {
+            piece.setFill(Color.web("#81b64c")); // Lime
+            piece.setStroke(Color.web("#5b7a3a"));
+        } else {
+            piece.setFill(Color.web("#262421")); // Dark Slate
+            piece.setStroke(Color.web("#151311"));
+        }
+        piece.setStrokeWidth(3);
+
+        if (isKing) {
+            piece.setStrokeWidth(5);
+            piece.setStroke(Color.web("#f0c040")); // Gold marker for King
+        }
+
+        return piece;
+    }
+
+    private VBox createRightPanel() {
+        VBox rightPanel = new VBox(15);
+        rightPanel.setPadding(new Insets(20));
+        rightPanel.getStyleClass().add("right-panel");
+        rightPanel.setPrefWidth(320);
+        rightPanel.setMinWidth(280);
+
+        // Chat section
         Label chatLabel = new Label("Chat");
-        chatLabel.setStyle("-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #e0c068;");
+        chatLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        chatLabel.getStyleClass().add("section-label");
 
-        chatArea = new TextArea();
-        chatArea.setEditable(false);
-        chatArea.setPrefSize(220, 480);
-        chatArea.setWrapText(true);
-        chatArea.setStyle("-fx-control-inner-background: #1e1e1e; -fx-text-fill: #cccccc; " +
-                          "-fx-font-family: 'Consolas'; -fx-font-size: 12;");
+        // Chat messages list
+        chatList = new ListView<>();
+        chatList.getStyleClass().add("chat-list");
+        VBox.setVgrow(chatList, Priority.ALWAYS);
 
+        // Chat input
+        HBox chatInputBox = new HBox(8);
         chatInput = new TextField();
-        chatInput.setPromptText("Send a message...");
-        chatInput.setStyle("-fx-background-color: #3c3c3c; -fx-text-fill: white; " +
-                           "-fx-prompt-text-fill: #666666;");
+        chatInput.setPromptText("Type a message...");
+        chatInput.setPrefHeight(35);
+        chatInput.getStyleClass().add("text-field");
+        HBox.setHgrow(chatInput, Priority.ALWAYS);
 
-        chatSendButton = new Button("Send");
-        chatSendButton.setStyle("-fx-background-color: #4a90d9; -fx-text-fill: white;");
+        Button sendButton = new Button("Send");
+        sendButton.setPrefHeight(35);
+        sendButton.getStyleClass().add("secondary-button");
+        sendButton.setOnAction(e -> handleSendMessage());
 
-        HBox chatInputRow = new HBox(5, chatInput, chatSendButton);
-        chatInput.setPrefWidth(155);
+        chatInput.setOnAction(e -> handleSendMessage());
 
-        VBox chatBox = new VBox(8, chatLabel, chatArea, chatInputRow);
-        chatBox.setPadding(new Insets(10));
-        chatBox.setStyle("-fx-background-color: #252535; -fx-background-radius: 6;");
-        chatBox.setPrefWidth(240);
+        chatInputBox.getChildren().addAll(chatInput, sendButton);
 
-        chatSendButton.setOnAction(e -> sendChat());
-        chatInput.setOnAction(e -> sendChat());
+        // Game controls section
+        Label controlsLabel = new Label("Game Controls");
+        controlsLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        controlsLabel.getStyleClass().add("section-label");
+        controlsLabel.setPadding(new Insets(15, 0, 0, 0));
 
-        // ---- Layout ----
-        VBox boardColumn = new VBox(10, statusBox, boardStack);
-        boardColumn.setAlignment(Pos.TOP_CENTER);
-        boardColumn.setPadding(new Insets(10));
+        // Control buttons
+        VBox controlsBox = new VBox(10);
 
-        HBox root = new HBox(15, boardColumn, chatBox);
-        root.setStyle("-fx-background-color: #1a1a2e;");
-        root.setPadding(new Insets(15));
-        root.setAlignment(Pos.TOP_LEFT);
+        Button offerDrawButton = new Button("Offer Draw");
+        offerDrawButton.setPrefHeight(40);
+        offerDrawButton.setMaxWidth(Double.MAX_VALUE);
+        offerDrawButton.getStyleClass().add("secondary-button");
+        offerDrawButton.setOnAction(e -> handleOfferDraw());
 
-        return new Scene(root, 840, 590);
+        Button resignButton = new Button("Resign");
+        resignButton.setPrefHeight(40);
+        resignButton.setMaxWidth(Double.MAX_VALUE);
+        resignButton.getStyleClass().add("resign-button");
+        resignButton.setOnAction(e -> handleResign());
+
+        Button exitButton = new Button("Exit Game");
+        exitButton.setPrefHeight(40);
+        exitButton.setMaxWidth(Double.MAX_VALUE);
+        exitButton.getStyleClass().add("secondary-button");
+        exitButton.setOnAction(e -> handleExit());
+
+        controlsBox.getChildren().addAll(offerDrawButton, resignButton, exitButton);
+
+        rightPanel.getChildren().addAll(
+            chatLabel,
+            chatList,
+            chatInputBox,
+            controlsLabel,
+            controlsBox
+        );
+
+        return rightPanel;
     }
 
     // ========================================
-    // BOARD RENDERING
+    // BOARD RENDERING & CLICK HANDLING
     // ========================================
 
     private void renderBoard(GameState state) {
-        boardGrid.getChildren().clear();
-        pieceLayer.getChildren().clear();
+        if (boardGrid == null) return;
         highlightedDests.clear();
 
         PieceType[][] board = state.getBoard();
 
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
-                Rectangle square = new Rectangle(CELL_SIZE, CELL_SIZE);
+                StackPane cell = boardCells[r][c];
+                cell.getChildren().clear(); // Clear existing piece or highlight
 
-                boolean isDark = (r + c) % 2 == 1;
-                square.setFill(isDark ? Color.web("#5d3a1a") : Color.web("#f0d9b5"));
-                square.setStroke(Color.web("#3a2510"));
-                square.setStrokeWidth(0.5);
-
-                boardGrid.add(square, c, r);
-            }
-        }
-
-        for (int r = 0; r < 8; r++) {
-            for (int c = 0; c < 8; c++) {
                 PieceType piece = board[r][c];
                 if (piece != PieceType.EMPTY) {
-                    drawPiece(r, c, piece);
+                   Circle pieceCircle = createPiece(piece);
+                   cell.getChildren().add(pieceCircle);
                 }
             }
         }
     }
 
-    private void drawPiece(int row, int col, PieceType piece) {
-        boolean isRed = (piece == PieceType.RED || piece == PieceType.RED_KING);
-        boolean isKing = (piece == PieceType.RED_KING || piece == PieceType.BLACK_KING);
-
-        double cx = col * CELL_SIZE + CELL_SIZE / 2.0;
-        double cy = row * CELL_SIZE + CELL_SIZE / 2.0;
-        double radius = CELL_SIZE / 2.0 - 6;
-
-        // Outer glow / shadow circle
-        Circle shadow = new Circle(cx + 2, cy + 2, radius);
-        shadow.setFill(Color.rgb(0, 0, 0, 0.35));
-
-        // Main piece
-        Circle circle = new Circle(cx, cy, radius);
-        if (isRed) {
-            circle.setFill(isKing ? Color.web("#c0392b") : Color.web("#e74c3c"));
-            circle.setStroke(Color.web("#922b21"));
-        } else {
-            circle.setFill(isKing ? Color.web("#1a1a4a") : Color.web("#2c3e7a"));
-            circle.setStroke(Color.web("#1a237e"));
-        }
-        circle.setStrokeWidth(2.5);
-
-        pieceLayer.getChildren().addAll(shadow, circle);
-
-        // King crown ring
-        if (isKing) {
-            Circle crown = new Circle(cx, cy, radius * 0.45);
-            crown.setFill(Color.web("#f0c040"));
-            crown.setStroke(Color.web("#b8860b"));
-            crown.setStrokeWidth(1.5);
-            pieceLayer.getChildren().add(crown);
-        }
-
-        // Click handler on piece
-        final int finalRow = row;
-        final int finalCol = col;
-        circle.setOnMouseClicked(e -> handlePieceClick(finalRow, finalCol));
-        if (isKing) {
-            Circle kingCenter = (Circle) pieceLayer.getChildren().get(pieceLayer.getChildren().size() - 1);
-            kingCenter.setOnMouseClicked(e -> handlePieceClick(finalRow, finalCol));
-        }
-    }
-
     private void highlightSquare(int row, int col) {
-        Rectangle highlight = new Rectangle(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        highlight.setFill(Color.rgb(0, 220, 80, 0.45));
-        highlight.setStroke(Color.web("#00ff66"));
+        Rectangle highlight = new Rectangle();
+        highlight.setFill(Color.rgb(129, 182, 76, 0.45)); // lime green
+        highlight.setStroke(Color.web("#81b64c"));
         highlight.setStrokeWidth(2);
-        highlight.setOnMouseClicked(e -> handleDestClick(row, col));
-        pieceLayer.getChildren().add(highlight);
+        highlight.widthProperty().bind(boardCells[row][col].widthProperty());
+        highlight.heightProperty().bind(boardCells[row][col].heightProperty());
+        highlight.setMouseTransparent(true); // Don't steal cell clicks
+        boardCells[row][col].getChildren().add(highlight);
     }
 
     private void highlightSelected(int row, int col) {
-        Rectangle sel = new Rectangle(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        Rectangle sel = new Rectangle();
         sel.setFill(Color.rgb(255, 200, 0, 0.35));
         sel.setStroke(Color.web("#ffcc00"));
-        sel.setStrokeWidth(2.5);
+        sel.setStrokeWidth(3.0);
         sel.setMouseTransparent(true);
-        pieceLayer.getChildren().add(sel);
+        sel.widthProperty().bind(boardCells[row][col].widthProperty());
+        sel.heightProperty().bind(boardCells[row][col].heightProperty());
+        boardCells[row][col].getChildren().add(sel);
     }
 
-    // ========================================
-    // CLICK HANDLING
-    // ========================================
-
-    private void handlePieceClick(int row, int col) {
+    private void handleCellClick(int row, int col) {
         if (gameState == null) return;
         if (!isMyTurn()) return; // ignore clicks when not your turn
 
@@ -275,6 +417,34 @@ public class GameController {
         return gameState != null && myColor != null && myColor.equals(gameState.getCurrentTurn());
     }
 
+    private void handleSendMessage() {
+        String text = chatInput.getText().trim();
+        if (!text.isEmpty()) {
+            Message chatMsg = new Message(MessageType.CHAT);
+            chatMsg.setSender(app.getUsername());
+            chatMsg.setContent(text);
+            app.send(chatMsg);
+            
+            chatList.getItems().add("You: " + text);
+            chatList.scrollTo(chatList.getItems().size() - 1);
+            chatInput.clear();
+        }
+    }
+
+    private void handleOfferDraw() {
+        System.out.println("Offer draw clicked");
+    }
+
+    private void handleResign() {
+        System.out.println("Resign clicked");
+    }
+
+    private void handleExit() {
+        System.out.println("Exit game clicked");
+        app.send(new Message(MessageType.QUIT));
+        app.switchToScene("lobby");
+    }
+
     // ========================================
     // MESSAGE HANDLERS (called from GuiClient)
     // ========================================
@@ -282,11 +452,15 @@ public class GameController {
     public void onGameStart(Message message) {
         gameState = message.getGameState();
         myColor = gameState.getRedPlayer().equals(app.getUsername()) ? "RED" : "BLACK";
+        
+        p1NameLabel.setText(gameState.getBlackPlayer() + " (Black)"); // Black is Row 7
+        p2NameLabel.setText(gameState.getRedPlayer() + " (Red)");   // Red is Row 0
+
         updateTurnLabel();
         renderBoard(gameState);
-        playerInfoLabel.setText("You are " + myColor + "  |  Red: " + gameState.getRedPlayer() +
-                                "  vs  Black: " + gameState.getBlackPlayer());
-        chatArea.clear();
+        
+        chatList.getItems().clear();
+        chatList.getItems().add("[System] Game started! You are " + myColor);
     }
 
     public void onGameUpdate(Message message) {
@@ -299,7 +473,7 @@ public class GameController {
         selectedPiece = null;
         highlightedDests.clear();
         if (gameState != null) renderBoard(gameState);
-        chatArea.appendText("[System] Invalid move: " + message.getContent() + "\n");
+        chatList.getItems().add("[System] Invalid move: " + message.getContent());
     }
 
     public void onGameOver(Message message) {
@@ -337,11 +511,12 @@ public class GameController {
 
     public void onChat(Message message) {
         String sender = message.getSender() != null ? message.getSender() : "Opponent";
-        chatArea.appendText(sender + ": " + message.getContent() + "\n");
+        chatList.getItems().add(sender + ": " + message.getContent());
+        chatList.scrollTo(chatList.getItems().size() - 1);
     }
 
     public void onOpponentQuit(Message message) {
-        chatArea.appendText("[System] Opponent left the game.\n");
+        chatList.getItems().add("[System] Opponent left the game.");
         Alert alert = new Alert(Alert.AlertType.INFORMATION, "Your opponent left the game.", ButtonType.OK);
         alert.setTitle("Opponent Disconnected");
         alert.showAndWait();
@@ -354,24 +529,12 @@ public class GameController {
     private void updateTurnLabel() {
         if (gameState == null) return;
         if (isMyTurn()) {
-            turnLabel.setText("Your turn (" + myColor + ")");
-            turnLabel.setStyle("-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2ecc71;");
+            statusLabel.setText("Your turn (" + myColor + ")");
+            statusLabel.setStyle("-fx-text-fill: #1a1613; -fx-background-color: #81b64c; -fx-background-radius: 4;");
         } else {
             String other = myColor.equals("RED") ? "BLACK" : "RED";
-            turnLabel.setText("Waiting for opponent's move... (" + other + ")");
-            turnLabel.setStyle("-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #e74c3c;");
-        }
-    }
-
-    private void sendChat() {
-        String text = chatInput.getText().trim();
-        if (!text.isEmpty()) {
-            Message chatMsg = new Message(MessageType.CHAT);
-            chatMsg.setSender(app.getUsername());
-            chatMsg.setContent(text);
-            app.send(chatMsg);
-            chatArea.appendText("You: " + text + "\n");
-            chatInput.clear();
+            statusLabel.setText("Opponent's turn (" + other + ")");
+            statusLabel.setStyle("-fx-text-fill: #e8e6e3; -fx-background-color: #3d3935; -fx-background-radius: 4;");
         }
     }
 }
