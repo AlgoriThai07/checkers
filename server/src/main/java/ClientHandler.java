@@ -89,6 +89,7 @@ public class ClientHandler extends Thread {
                 Message response = new Message(MessageType.AUTH_SUCCESS, "Registration successful");
                 response.setSender(username);
                 sendMessage(response);
+                gameManager.addClient(this);
             } else {
                 sendMessage(new Message(MessageType.AUTH_FAIL, "Username already taken"));
             }
@@ -107,6 +108,7 @@ public class ClientHandler extends Thread {
                 Message response = new Message(MessageType.AUTH_SUCCESS, statsPayload);
                 response.setSender(username);
                 sendMessage(response);
+                gameManager.addClient(this);
             } else {
                 sendMessage(new Message(MessageType.AUTH_FAIL, "Invalid credentials"));
             }
@@ -145,6 +147,7 @@ public class ClientHandler extends Thread {
     }
 
     private void handleDisconnect() {
+        gameManager.removeClient(this);
         if (currentSession != null) {
             currentSession.handleQuit(this);
         }

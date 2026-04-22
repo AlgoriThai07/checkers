@@ -1,15 +1,20 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import model.Message;
+import model.Message.MessageType;
+
 public class GameManager {
 
     private List<ClientHandler> waitingQueue;
     private List<GameSession> activeSessions;
+    private List<ClientHandler> activeClients;
     private DatabaseManager databaseManager;
 
     public GameManager(DatabaseManager databaseManager) {
         this.waitingQueue = new ArrayList<>();
         this.activeSessions = new ArrayList<>();
+        this.activeClients = new ArrayList<>();
         this.databaseManager = databaseManager;
     }
 
@@ -58,5 +63,31 @@ public class GameManager {
 
     public synchronized void removeFromQueue(ClientHandler client) {
         waitingQueue.remove(client);
+    }
+
+    public synchronized void addClient(ClientHandler client) {
+        if (!activeClients.contains(client)) {
+            activeClients.add(client);
+        }
+        broadcastOnlinePlayers();
+    }
+
+    public synchronized void removeClient(ClientHandler client) {
+        activeClients.remove(client);
+        waitingQueue.remove(client);
+        broadcastOnlinePlayers();
+    }
+
+    private void broadcastOnlinePlayers() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < activeClients.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append(activeClients.get(i).getUsername());
+        }
+        String playerList = sb.toString();
+        Message msg = new Message(MessageType.ONLINE_PLAYERS_UPDATE, playerList);
+        for (ClientHandler client : activeClients) {
+            client.sendMessage(msg);
+        }
     }
 }

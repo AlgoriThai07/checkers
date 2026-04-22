@@ -109,6 +109,9 @@ public class GuiClient extends Application {
                 case STATS_UPDATE:
                     lobbyController.onStatsUpdate(message);
                     break;
+                case ONLINE_PLAYERS_UPDATE:
+                    lobbyController.onOnlinePlayersUpdate(message);
+                    break;
                 default:
                     break;
             }

@@ -22,7 +22,8 @@ public class Message implements Serializable {
         DRAW_OFFER,
         DRAW_ACCEPT,
         DRAW_DECLINE,
-        STATS_UPDATE
+        STATS_UPDATE,
+        ONLINE_PLAYERS_UPDATE
     }
 
     private MessageType type;

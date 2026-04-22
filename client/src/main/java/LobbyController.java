@@ -180,11 +180,7 @@ public class LobbyController {
                 "-fx-background-color: #111419; -fx-control-inner-background: #111419; -fx-border-color: rgba(255,255,255,0.1); -fx-border-radius: 6; -fx-background-radius: 6;");
         VBox.setVgrow(onlinePlayersList, Priority.ALWAYS);
 
-        // Sample data
-        onlinePlayersList.getItems().addAll(
-                "Player_1:Online",
-                "CheckersPro:Online",
-                "GameMaster:Offline");
+        // List starts empty — populated by ONLINE_PLAYERS_UPDATE from server
 
         onlinePlayersList.setCellFactory(param -> new ListCell<String>() {
             @Override
@@ -195,9 +191,7 @@ public class LobbyController {
                     setText(null);
                     setStyle("-fx-background-color: transparent;");
                 } else {
-                    String[] parts = item.split(":");
-                    String name = parts[0];
-                    boolean isOnline = parts.length > 1 && parts[1].equals("Online");
+                    String name = item;
 
                     HBox row = new HBox(12);
                     row.setAlignment(Pos.CENTER_LEFT);
@@ -219,9 +213,9 @@ public class LobbyController {
                     nameLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
                     nameLabel.setTextFill(Color.web("#e6eef6"));
 
-                    // Online dot
+                    // Online dot (always green — all players in list are online)
                     Circle statusDot = new Circle(4);
-                    statusDot.setFill(isOnline ? Color.web("#2ecc71") : Color.web("#95a5a6"));
+                    statusDot.setFill(Color.web("#2ecc71"));
 
                     // Spacer
                     Region spacerObj = new Region();
@@ -229,16 +223,14 @@ public class LobbyController {
 
                     row.getChildren().addAll(avatarPane, nameLabel, statusDot, spacerObj);
 
-                    // Invite button (only for online players)
-                    if (isOnline) {
-                        Button inviteBtn = new Button("Invite");
-                        inviteBtn.setStyle(
-                                "-fx-background-color: transparent; -fx-text-fill: #ff2dd0; -fx-border-color: #ff2dd0; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 12; -fx-padding: 4 12; -fx-cursor: hand;");
-                        inviteBtn.setOnAction(e -> {
-                            System.out.println("Invite clicked for: " + name);
-                        });
-                        row.getChildren().add(inviteBtn);
-                    }
+                    // Invite button
+                    Button inviteBtn = new Button("Invite");
+                    inviteBtn.setStyle(
+                            "-fx-background-color: transparent; -fx-text-fill: #ff2dd0; -fx-border-color: #ff2dd0; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 12; -fx-padding: 4 12; -fx-cursor: hand;");
+                    inviteBtn.setOnAction(e -> {
+                        System.out.println("Invite clicked for: " + name);
+                    });
+                    row.getChildren().add(inviteBtn);
 
                     setGraphic(row);
                     setText(null);
@@ -300,6 +292,21 @@ public class LobbyController {
                 if (lossesCountLabel != null) lossesCountLabel.setText(parts[1]);
                 if (drawsCountLabel != null) drawsCountLabel.setText(parts[2]);
             }
+        }
+    }
+
+    public void onOnlinePlayersUpdate(Message message) {
+        if (message.getContent() != null && !message.getContent().isEmpty()) {
+            String[] players = message.getContent().split(",");
+            onlinePlayersList.getItems().clear();
+            for (String player : players) {
+                // Don't show yourself in the online list
+                if (!player.equals(username)) {
+                    onlinePlayersList.getItems().add(player);
+                }
+            }
+        } else {
+            onlinePlayersList.getItems().clear();
         }
     }
 
