@@ -260,13 +260,14 @@ public class LobbyController {
     }
 
     private void handlePlayWithFriend() {
-        System.out.println("Play with Friend clicked - Starting PVP Matchmaking");
-        app.send(new Message(MessageType.QUEUE, "PVP"));
-        app.switchToScene("matchmaking");
+        System.out.println("Play Local with Friend clicked - Starting local hot-seat game");
+        app.send(new Message(MessageType.QUEUE, "LOCAL"));
     }
 
     private void handleCreateGame() {
-        System.out.println("Create Game clicked - UI Button pressed");
+        System.out.println("Play Online vs Friend clicked - Starting PVP Matchmaking");
+        app.send(new Message(MessageType.QUEUE, "PVP"));
+        app.switchToScene("matchmaking");
     }
 
     private void handleLogout() {
