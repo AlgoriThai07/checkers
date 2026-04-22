@@ -1,0 +1,385 @@
+/* ==================== GLOBAL STYLES ==================== */
+
+/* Root container */
+.root {
+    -fx-background-color: #0b0f14;
+}
+
+/* ==================== TYPOGRAPHY ==================== */
+
+.title {
+    -fx-text-fill: #e6eef6;
+}
+
+.subtitle {
+    -fx-text-fill: #9aa6b2;
+}
+
+.welcome-label {
+    -fx-text-fill: #e6eef6;
+}
+
+.section-label {
+    -fx-text-fill: #9aa6b2;
+}
+
+.username-label {
+    -fx-text-fill: #00f0ff;
+}
+
+.secondary-text {
+    -fx-text-fill: #9aa6b2;
+}
+
+.field-label {
+    -fx-text-fill: #9aa6b2;
+}
+
+/* ==================== CONTAINERS ==================== */
+
+.form-container {
+    -fx-background-color: #111419;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.game-options-container {
+    -fx-background-color: #111419;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 240, 255, 0.08), 15, 0, 0, 2);
+}
+
+.top-bar {
+    -fx-background-color: #0f1419;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-width: 0 0 1 0;
+}
+
+.friends-panel {
+    -fx-background-color: #111419;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-width: 0 0 0 1;
+}
+
+/* ==================== BUTTONS ==================== */
+
+/* Primary button */
+.primary-button {
+    -fx-background-color: #00f0ff;
+    -fx-background-radius: 6;
+    -fx-text-fill: #0b0f14;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 240, 255, 0.3), 10, 0, 0, 0);
+}
+
+.primary-button:hover {
+    -fx-background-color: #33f3ff;
+    -fx-effect: dropshadow(gaussian, rgba(0, 240, 255, 0.5), 15, 0, 0, 0);
+}
+
+.primary-button:pressed {
+    -fx-background-color: #00c8d9;
+}
+
+/* Secondary button */
+.secondary-button {
+    -fx-background-color: #111419;
+    -fx-background-radius: 6;
+    -fx-text-fill: #e6eef6;
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-padding: 8 20 8 20;
+}
+
+.secondary-button:hover {
+    -fx-background-color: #1a1f26;
+    -fx-border-color: #00f0ff;
+}
+
+.secondary-button:pressed {
+    -fx-background-color: #0a0e13;
+}
+
+/* Link button */
+.link-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #00f0ff;
+    -fx-font-size: 12;
+    -fx-cursor: hand;
+    -fx-underline: false;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.link-button:hover {
+    -fx-text-fill: #33f3ff;
+    -fx-underline: true;
+}
+
+/* Invite button */
+.invite-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4;
+    -fx-text-fill: #ff2dd0;
+    -fx-font-size: 13;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-color: #ff2dd0;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+}
+
+.invite-button:hover {
+    -fx-background-color: #ff2dd0;
+    -fx-text-fill: white;
+}
+
+.invite-button:pressed {
+    -fx-background-color: #cc24a6;
+}
+
+/* Add friend button */
+.add-friend-button {
+    -fx-background-color: #00f0ff;
+    -fx-background-radius: 50%;
+    -fx-text-fill: #0b0f14;
+    -fx-font-size: 18;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-padding: 0;
+}
+
+.add-friend-button:hover {
+    -fx-background-color: #33f3ff;
+}
+
+.add-friend-button:pressed {
+    -fx-background-color: #00c8d9;
+}
+
+/* ==================== TEXT FIELDS ==================== */
+
+.text-field {
+    -fx-background-color: #0b0f14;
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: #e6eef6;
+    -fx-prompt-text-fill: #9aa6b2;
+    -fx-padding: 10;
+    -fx-font-size: 14;
+}
+
+.text-field:focused {
+    -fx-border-color: #00f0ff;
+    -fx-border-width: 2;
+    -fx-background-color: #0f1419;
+}
+
+/* ==================== LABELS ==================== */
+
+.error-label {
+    -fx-text-fill: #e74c3c;
+    -fx-font-size: 12;
+    -fx-padding: 5 0 0 0;
+}
+
+/* ==================== LIST VIEWS ==================== */
+
+/* Friends list */
+.friends-list {
+    -fx-background-color: #0b0f14;
+    -fx-background-radius: 4;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+}
+
+.friends-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #9aa6b2;
+    -fx-padding: 10;
+    -fx-font-size: 13;
+}
+
+.friends-list .list-cell:selected {
+    -fx-background-color: rgba(0, 240, 255, 0.1);
+    -fx-text-fill: #e6eef6;
+}
+
+.friends-list .list-cell:hover {
+    -fx-background-color: rgba(0, 240, 255, 0.05);
+}
+
+.friends-list:focused .list-cell:selected {
+    -fx-background-color: rgba(0, 240, 255, 0.15);
+    -fx-text-fill: #e6eef6;
+}
+
+/* Players list */
+.players-list {
+    -fx-background-color: #111419;
+    -fx-background-radius: 4;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+}
+
+.players-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #9aa6b2;
+    -fx-padding: 10;
+    -fx-font-size: 13;
+}
+
+.players-list .list-cell:selected {
+    -fx-background-color: rgba(0, 240, 255, 0.1);
+    -fx-text-fill: #e6eef6;
+}
+
+.players-list .list-cell:hover {
+    -fx-background-color: rgba(0, 240, 255, 0.05);
+}
+
+.players-list:focused .list-cell:selected {
+    -fx-background-color: rgba(0, 240, 255, 0.15);
+    -fx-text-fill: #e6eef6;
+}
+
+/* ==================== SCROLLBARS ==================== */
+
+.friends-list .scroll-bar:vertical,
+.players-list .scroll-bar:vertical {
+    -fx-background-color: transparent;
+}
+
+.friends-list .scroll-bar:vertical .track,
+.players-list .scroll-bar:vertical .track {
+    -fx-background-color: #0b0f14;
+    -fx-background-radius: 4;
+}
+
+.friends-list .scroll-bar:vertical .thumb,
+.players-list .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(255,255,255,0.1);
+    -fx-background-radius: 4;
+}
+
+.friends-list .scroll-bar:vertical .thumb:hover,
+.players-list .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(255,255,255,0.2);
+}
+
+.friends-list .scroll-bar:vertical .increment-button,
+.friends-list .scroll-bar:vertical .decrement-button,
+.players-list .scroll-bar:vertical .increment-button,
+.players-list .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* ==================== PROGRESS INDICATOR ==================== */
+
+.progress-indicator {
+    -fx-progress-color: #00f0ff;
+}
+
+.progress-indicator .indicator {
+    -fx-background-color: transparent;
+}
+
+.progress-indicator .percentage {
+    -fx-fill: transparent;
+}
+
+/* ==================== GAME BOARD ==================== */
+
+.board-container {
+    -fx-effect: dropshadow(gaussian, rgba(0, 240, 255, 0.15), 20, 0, 0, 5);
+}
+
+.checkerboard {
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-width: 2;
+    -fx-background-color: #0b0f14;
+}
+
+.dark-cell {
+    -fx-background-color: #171a1d;
+}
+
+.light-cell {
+    -fx-background-color: #2b333b;
+}
+
+.current-player-info {
+    -fx-background-color: #111419;
+    -fx-background-radius: 8;
+    -fx-border-color: #00f0ff;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0, 240, 255, 0.18), 10, 0, 0, 0);
+}
+
+.opponent-player-info {
+    -fx-background-color: #111419;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+
+.timer-label {
+    -fx-text-fill: #e6eef6;
+}
+
+.right-panel {
+    -fx-background-color: #111419;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-width: 0 0 0 1;
+}
+
+.chat-list {
+    -fx-background-color: #0b0f14;
+    -fx-control-inner-background: #0b0f14;
+    -fx-border-color: rgba(255,255,255,0.1);
+    -fx-border-radius: 4;
+}
+
+.chat-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e6eef6;
+    -fx-font-size: 13;
+    -fx-padding: 5 10 5 10;
+}
+
+.resign-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e74c3c;
+    -fx-border-color: #e74c3c;
+    -fx-border-radius: 4;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.resign-button:hover {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+}

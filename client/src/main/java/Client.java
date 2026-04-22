@@ -27,12 +27,16 @@ public class Client extends Thread{
 	public void run() {
 
 		try {
-			socketClient= new Socket("127.0.0.1",5555);
+			socketClient = new Socket("127.0.0.1", 5555);
 			out = new ObjectOutputStream(socketClient.getOutputStream());
 			in = new ObjectInputStream(socketClient.getInputStream());
 			socketClient.setTcpNoDelay(true);
 		}
-		catch(Exception e) {}
+		catch(Exception e) {
+			System.err.println("Client connection error: " + e.getMessage());
+			callback.accept("Error: Could not connect to server. Make sure the server is running.");
+			return; // Stop the thread if we can't connect
+		}
 
 		while(true) {
 
@@ -49,13 +53,21 @@ public class Client extends Thread{
 	}
 
 	public void send(Message message) {
+		if (out == null) {
+			System.err.println("Cannot send message: Not connected to server.");
+			callback.accept("Error: Not connected to server.");
+			return;
+		}
 
 		try {
 			out.writeObject(message);
 			out.flush();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("Failed to send message: " + e.getMessage());
+			callback.accept("Lost connection to server");
+			try {
+				socketClient.close();
+			} catch (Exception ex) {}
 		}
 	}
 

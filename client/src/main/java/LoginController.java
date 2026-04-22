@@ -110,9 +110,9 @@ public class LoginController {
 
         Scene scene = new Scene(root, 400, 500);
         try {
-            scene.getStylesheets().add(getClass().getResource("/login-styles.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/app-styles.css").toExternalForm());
         } catch (Exception e) {
-            System.out.println("Could not load login-styles.css");
+            System.out.println("Could not load app-styles.css");
             e.printStackTrace();
         }
         return scene;
@@ -156,5 +156,14 @@ public class LoginController {
         errorLabel.setManaged(true);
         loginButton.setDisable(false);
         loginButton.setText("LOGIN");
+    }
+
+    public void reset() {
+        loginButton.setDisable(false);
+        loginButton.setText("LOGIN");
+        passwordField.clear();
+        usernameField.clear();
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
     }
 }

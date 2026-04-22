@@ -76,7 +76,10 @@ public class ClientHandler extends Thread {
         if (parts.length == 2) {
             boolean success = databaseManager.register(parts[0], parts[1]);
             if (success) {
-                sendMessage(new Message(MessageType.AUTH_SUCCESS, "Registration successful"));
+                this.username = parts[0];
+                Message response = new Message(MessageType.AUTH_SUCCESS, "Registration successful");
+                response.setSender(username);
+                sendMessage(response);
             } else {
                 sendMessage(new Message(MessageType.AUTH_FAIL, "Username already taken"));
             }
@@ -91,7 +94,8 @@ public class ClientHandler extends Thread {
             User user = databaseManager.login(parts[0], parts[1]);
             if (user != null) {
                 this.username = parts[0];
-                Message response = new Message(MessageType.AUTH_SUCCESS, "Login successful");
+                String statsPayload = "Login successful:" + user.getWins() + ":" + user.getLosses() + ":" + user.getDraws();
+                Message response = new Message(MessageType.AUTH_SUCCESS, statsPayload);
                 response.setSender(username);
                 sendMessage(response);
             } else {
