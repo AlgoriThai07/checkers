@@ -292,6 +292,17 @@ public class LobbyController {
         }
     }
 
+    public void onStatsUpdate(Message message) {
+        if (message.getContent() != null) {
+            String[] parts = message.getContent().split(":");
+            if (parts.length == 3) {
+                if (winsCountLabel != null) winsCountLabel.setText(parts[0]);
+                if (lossesCountLabel != null) lossesCountLabel.setText(parts[1]);
+                if (drawsCountLabel != null) drawsCountLabel.setText(parts[2]);
+            }
+        }
+    }
+
     public void reset() {
         // Reset lobby state if necessary
     }

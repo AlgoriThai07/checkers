@@ -106,6 +106,9 @@ public class GuiClient extends Application {
                 case DRAW_DECLINE:
                     gameController.onDrawDecline(message);
                     break;
+                case STATS_UPDATE:
+                    lobbyController.onStatsUpdate(message);
+                    break;
                 default:
                     break;
             }

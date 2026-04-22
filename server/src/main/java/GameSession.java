@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import model.User;
+
 import model.GameState;
 import model.Message;
 import model.Message.MessageType;
@@ -272,6 +274,19 @@ public class GameSession {
             } else if (gameState.getStatus().equals("DRAW")) {
                 databaseManager.recordResult(redName, blackName, true);
             }
+            // Send live stats update to both players
+            sendStatsUpdate(redPlayer);
+            sendStatsUpdate(blackPlayer);
+        }
+    }
+
+    private void sendStatsUpdate(ClientHandler player) {
+        if (player == null) return;
+        User stats = databaseManager.getStats(player.getUsername());
+        if (stats != null) {
+            String payload = stats.getWins() + ":" + stats.getLosses() + ":" + stats.getDraws();
+            Message statsMsg = new Message(MessageType.STATS_UPDATE, payload);
+            player.sendMessage(statsMsg);
         }
     }
 
@@ -512,9 +527,13 @@ public class GameSession {
             if (sender == redPlayer && blackPlayer != null) {
                 // Red quit → Black wins
                 databaseManager.recordResult(blackPlayer.getUsername(), redPlayer.getUsername(), false);
+                sendStatsUpdate(redPlayer);
+                sendStatsUpdate(blackPlayer);
             } else if (sender == blackPlayer) {
                 // Black quit → Red wins
                 databaseManager.recordResult(redPlayer.getUsername(), blackPlayer.getUsername(), false);
+                sendStatsUpdate(redPlayer);
+                sendStatsUpdate(blackPlayer);
             }
         }
 

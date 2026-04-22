@@ -21,7 +21,8 @@ public class Message implements Serializable {
         QUIT,
         DRAW_OFFER,
         DRAW_ACCEPT,
-        DRAW_DECLINE
+        DRAW_DECLINE,
+        STATS_UPDATE
     }
 
     private MessageType type;
