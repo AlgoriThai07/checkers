@@ -69,6 +69,12 @@ public class ClientHandler extends Thread {
                     case DRAW_DECLINE:
                         if (currentSession != null) currentSession.handleDrawDecline(this);
                         break;
+                    case ADD_FRIEND:
+                        gameManager.handleAddFriend(this, message.getContent());
+                        break;
+                    case REMOVE_FRIEND:
+                        gameManager.handleRemoveFriend(this, message.getContent());
+                        break;
                     default:
                         break;
                 }

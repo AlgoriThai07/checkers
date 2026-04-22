@@ -69,25 +69,115 @@ public class GameManager {
         if (!activeClients.contains(client)) {
             activeClients.add(client);
         }
-        broadcastOnlinePlayers();
+        // Send this client their friends list with online status
+        sendFriendsListTo(client);
+        // Notify any online friends that this user came online
+        notifyFriendsOfStatusChange(client);
     }
 
     public synchronized void removeClient(ClientHandler client) {
         activeClients.remove(client);
         waitingQueue.remove(client);
-        broadcastOnlinePlayers();
+        // Notify any online friends that this user went offline
+        notifyFriendsOfStatusChange(client);
     }
 
-    private void broadcastOnlinePlayers() {
+    /**
+     * Send a FRIENDS_LIST_UPDATE to the given client.
+     * Format: "friend1:online,friend2:offline,friend3:online"
+     */
+    public synchronized void sendFriendsListTo(ClientHandler client) {
+        String[] friends = databaseManager.getFriends(client.getUsername());
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < activeClients.size(); i++) {
+        for (int i = 0; i < friends.length; i++) {
             if (i > 0) sb.append(",");
-            sb.append(activeClients.get(i).getUsername());
+            boolean isOnline = isUserOnline(friends[i]);
+            sb.append(friends[i]).append(":").append(isOnline ? "online" : "offline");
         }
-        String playerList = sb.toString();
-        Message msg = new Message(MessageType.ONLINE_PLAYERS_UPDATE, playerList);
-        for (ClientHandler client : activeClients) {
-            client.sendMessage(msg);
+        Message msg = new Message(MessageType.FRIENDS_LIST_UPDATE, sb.toString());
+        client.sendMessage(msg);
+    }
+
+    /**
+     * When a user comes online or goes offline, notify each of their friends
+     * who is currently online so they can refresh their friends list.
+     */
+    private void notifyFriendsOfStatusChange(ClientHandler client) {
+        String[] friends = databaseManager.getFriends(client.getUsername());
+        for (String friendName : friends) {
+            ClientHandler friendClient = getClientByUsername(friendName);
+            if (friendClient != null) {
+                sendFriendsListTo(friendClient);
+            }
         }
     }
+
+    /**
+     * Handle an ADD_FRIEND request from a client.
+     */
+    public synchronized void handleAddFriend(ClientHandler client, String friendUsername) {
+        if (friendUsername == null || friendUsername.trim().isEmpty()) {
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:Username cannot be empty"));
+            return;
+        }
+        if (friendUsername.equals(client.getUsername())) {
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:You cannot add yourself"));
+            return;
+        }
+        if (!databaseManager.userExists(friendUsername)) {
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:User not found"));
+            return;
+        }
+        boolean success = databaseManager.addFriend(client.getUsername(), friendUsername);
+        if (success) {
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "SUCCESS:" + friendUsername));
+            // Refresh both users' friends lists
+            sendFriendsListTo(client);
+            ClientHandler friendClient = getClientByUsername(friendUsername);
+            if (friendClient != null) {
+                sendFriendsListTo(friendClient);
+            }
+        } else {
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:Could not add friend"));
+        }
+    }
+
+    /**
+     * Handle a REMOVE_FRIEND request from a client.
+     */
+    public synchronized void handleRemoveFriend(ClientHandler client, String friendUsername) {
+        databaseManager.removeFriend(client.getUsername(), friendUsername);
+        client.sendMessage(new Message(MessageType.REMOVE_FRIEND, "SUCCESS:" + friendUsername));
+        // Refresh both users' friends lists
+        sendFriendsListTo(client);
+        ClientHandler friendClient = getClientByUsername(friendUsername);
+        if (friendClient != null) {
+            sendFriendsListTo(friendClient);
+        }
+    }
+
+    /**
+     * Check if a user is currently online (has an active client connection).
+     */
+    private boolean isUserOnline(String username) {
+        for (ClientHandler client : activeClients) {
+            if (username.equals(client.getUsername())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Find an active ClientHandler by username.
+     */
+    private ClientHandler getClientByUsername(String username) {
+        for (ClientHandler client : activeClients) {
+            if (username.equals(client.getUsername())) {
+                return client;
+            }
+        }
+        return null;
+    }
 }
+

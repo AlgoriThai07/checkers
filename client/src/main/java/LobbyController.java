@@ -5,6 +5,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.BorderPane;
@@ -23,8 +24,9 @@ public class LobbyController {
     private GuiClient app;
 
     private String username = "Player";
-    private ListView<String> onlinePlayersList;
+    private ListView<String> friendsList;
     private Label welcomeLabel;
+    private Label friendStatusLabel;
 
     private Label winsCountLabel;
     private Label lossesCountLabel;
@@ -166,23 +168,53 @@ public class LobbyController {
 
         buttonsRow.getChildren().addAll(playBotButton, playFriendButton, createGameButton);
 
-        // Online Players section
-        VBox onlinePlayersBox = new VBox(10);
-        onlinePlayersBox.setPadding(new Insets(20, 0, 0, 0));
-        VBox.setVgrow(onlinePlayersBox, Priority.ALWAYS);
+        // Friends section
+        VBox friendsBox = new VBox(10);
+        friendsBox.setPadding(new Insets(20, 0, 0, 0));
+        VBox.setVgrow(friendsBox, Priority.ALWAYS);
 
-        Label onlinePlayersLabel = new Label("Online Players");
-        onlinePlayersLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
-        onlinePlayersLabel.setStyle("-fx-text-fill: #e6eef6;");
+        Label friendsLabel = new Label("Friends");
+        friendsLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        friendsLabel.setStyle("-fx-text-fill: #e6eef6;");
 
-        onlinePlayersList = new ListView<>();
-        onlinePlayersList.setStyle(
+        // Add friend row
+        HBox addFriendRow = new HBox(10);
+        addFriendRow.setAlignment(Pos.CENTER_LEFT);
+
+        TextField addFriendField = new TextField();
+        addFriendField.setPromptText("Enter username...");
+        addFriendField.setStyle(
+                "-fx-background-color: #111419; -fx-text-fill: #e6eef6; -fx-prompt-text-fill: #555; -fx-border-color: rgba(255,255,255,0.15); -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8 12; -fx-font-size: 13;");
+        HBox.setHgrow(addFriendField, Priority.ALWAYS);
+
+        Button addFriendBtn = new Button("+ Add Friend");
+        addFriendBtn.setStyle(
+                "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 8 16;");
+        addFriendBtn.setOnAction(e -> {
+            String friendName = addFriendField.getText().trim();
+            if (!friendName.isEmpty()) {
+                app.send(new Message(MessageType.ADD_FRIEND, friendName));
+                addFriendField.clear();
+            }
+        });
+
+        // Also allow pressing Enter to add
+        addFriendField.setOnAction(e -> addFriendBtn.fire());
+
+        addFriendRow.getChildren().addAll(addFriendField, addFriendBtn);
+
+        // Status label for feedback
+        friendStatusLabel = new Label();
+        friendStatusLabel.setFont(Font.font("System", 12));
+        friendStatusLabel.setStyle("-fx-text-fill: #9aa6b2;");
+
+        friendsList = new ListView<>();
+        friendsList.setStyle(
                 "-fx-background-color: #111419; -fx-control-inner-background: #111419; -fx-border-color: rgba(255,255,255,0.1); -fx-border-radius: 6; -fx-background-radius: 6;");
-        VBox.setVgrow(onlinePlayersList, Priority.ALWAYS);
+        VBox.setVgrow(friendsList, Priority.ALWAYS);
 
-        // List starts empty — populated by ONLINE_PLAYERS_UPDATE from server
-
-        onlinePlayersList.setCellFactory(param -> new ListCell<String>() {
+        // Cell factory: each item is "friendName:online" or "friendName:offline"
+        friendsList.setCellFactory(param -> new ListCell<String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -191,7 +223,9 @@ public class LobbyController {
                     setText(null);
                     setStyle("-fx-background-color: transparent;");
                 } else {
-                    String name = item;
+                    String[] parts = item.split(":");
+                    String name = parts[0];
+                    boolean isOnline = parts.length > 1 && parts[1].equals("online");
 
                     HBox row = new HBox(12);
                     row.setAlignment(Pos.CENTER_LEFT);
@@ -213,24 +247,40 @@ public class LobbyController {
                     nameLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
                     nameLabel.setTextFill(Color.web("#e6eef6"));
 
-                    // Online dot (always green — all players in list are online)
+                    // Online/Offline dot
                     Circle statusDot = new Circle(4);
-                    statusDot.setFill(Color.web("#2ecc71"));
+                    statusDot.setFill(isOnline ? Color.web("#2ecc71") : Color.web("#95a5a6"));
+
+                    // Status text
+                    Label statusText = new Label(isOnline ? "Online" : "Offline");
+                    statusText.setFont(Font.font("System", 11));
+                    statusText.setTextFill(isOnline ? Color.web("#2ecc71") : Color.web("#95a5a6"));
 
                     // Spacer
                     Region spacerObj = new Region();
                     HBox.setHgrow(spacerObj, Priority.ALWAYS);
 
-                    row.getChildren().addAll(avatarPane, nameLabel, statusDot, spacerObj);
+                    row.getChildren().addAll(avatarPane, nameLabel, statusDot, statusText, spacerObj);
 
-                    // Invite button
-                    Button inviteBtn = new Button("Invite");
-                    inviteBtn.setStyle(
-                            "-fx-background-color: transparent; -fx-text-fill: #ff2dd0; -fx-border-color: #ff2dd0; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 12; -fx-padding: 4 12; -fx-cursor: hand;");
-                    inviteBtn.setOnAction(e -> {
-                        System.out.println("Invite clicked for: " + name);
+                    // Invite button (only for online friends)
+                    if (isOnline) {
+                        Button inviteBtn = new Button("Invite");
+                        inviteBtn.setStyle(
+                                "-fx-background-color: transparent; -fx-text-fill: #ff2dd0; -fx-border-color: #ff2dd0; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 12; -fx-padding: 4 12; -fx-cursor: hand;");
+                        inviteBtn.setOnAction(e -> {
+                            System.out.println("Invite clicked for: " + name);
+                        });
+                        row.getChildren().add(inviteBtn);
+                    }
+
+                    // Remove friend button
+                    Button removeBtn = new Button("✕");
+                    removeBtn.setStyle(
+                            "-fx-background-color: transparent; -fx-text-fill: #e74c3c; -fx-border-color: #e74c3c; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 12; -fx-padding: 4 8; -fx-cursor: hand;");
+                    removeBtn.setOnAction(e -> {
+                        app.send(new Message(MessageType.REMOVE_FRIEND, name));
                     });
-                    row.getChildren().add(inviteBtn);
+                    row.getChildren().add(removeBtn);
 
                     setGraphic(row);
                     setText(null);
@@ -239,9 +289,9 @@ public class LobbyController {
             }
         });
 
-        onlinePlayersBox.getChildren().addAll(onlinePlayersLabel, onlinePlayersList);
+        friendsBox.getChildren().addAll(friendsLabel, addFriendRow, friendStatusLabel, friendsList);
 
-        centerContent.getChildren().addAll(welcomeLabel, statsRow, buttonsRow, onlinePlayersBox);
+        centerContent.getChildren().addAll(welcomeLabel, statsRow, buttonsRow, friendsBox);
 
         return centerContent;
     }
@@ -295,22 +345,46 @@ public class LobbyController {
         }
     }
 
-    public void onOnlinePlayersUpdate(Message message) {
+    /**
+     * Called when the server sends a FRIENDS_LIST_UPDATE.
+     * Content format: "friend1:online,friend2:offline,..."
+     */
+    public void onFriendsListUpdate(Message message) {
+        friendsList.getItems().clear();
         if (message.getContent() != null && !message.getContent().isEmpty()) {
-            String[] players = message.getContent().split(",");
-            onlinePlayersList.getItems().clear();
-            for (String player : players) {
-                // Don't show yourself in the online list
-                if (!player.equals(username)) {
-                    onlinePlayersList.getItems().add(player);
+            String[] entries = message.getContent().split(",");
+            for (String entry : entries) {
+                friendsList.getItems().add(entry);
+            }
+        }
+    }
+
+    /**
+     * Called when the server responds to an ADD_FRIEND request.
+     * Content format: "SUCCESS:username" or "ERROR:message"
+     */
+    public void onAddFriendResponse(Message message) {
+        if (message.getContent() != null) {
+            if (message.getContent().startsWith("ERROR:")) {
+                String error = message.getContent().substring(6);
+                if (friendStatusLabel != null) {
+                    friendStatusLabel.setText("⚠ " + error);
+                    friendStatusLabel.setStyle("-fx-text-fill: #e74c3c;");
+                }
+            } else if (message.getContent().startsWith("SUCCESS:")) {
+                String friendName = message.getContent().substring(8);
+                if (friendStatusLabel != null) {
+                    friendStatusLabel.setText("✓ Added " + friendName + " as friend!");
+                    friendStatusLabel.setStyle("-fx-text-fill: #2ecc71;");
                 }
             }
-        } else {
-            onlinePlayersList.getItems().clear();
         }
     }
 
     public void reset() {
-        // Reset lobby state if necessary
+        // Clear feedback label on re-entry
+        if (friendStatusLabel != null) {
+            friendStatusLabel.setText("");
+        }
     }
 }

@@ -23,7 +23,9 @@ public class Message implements Serializable {
         DRAW_ACCEPT,
         DRAW_DECLINE,
         STATS_UPDATE,
-        ONLINE_PLAYERS_UPDATE
+        ADD_FRIEND,
+        REMOVE_FRIEND,
+        FRIENDS_LIST_UPDATE
     }
 
     private MessageType type;

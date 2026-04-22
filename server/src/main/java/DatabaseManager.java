@@ -46,6 +46,16 @@ public class DatabaseManager {
                 "  FOREIGN KEY (loser)  REFERENCES users(username)" +
                 ")"
             );
+
+            stmt.execute(
+                "CREATE TABLE IF NOT EXISTS friends (" +
+                "  user1 TEXT NOT NULL," +
+                "  user2 TEXT NOT NULL," +
+                "  PRIMARY KEY (user1, user2)," +
+                "  FOREIGN KEY (user1) REFERENCES users(username)," +
+                "  FOREIGN KEY (user2) REFERENCES users(username)" +
+                ")"
+            );
         }
     }
 
@@ -158,5 +168,88 @@ public class DatabaseManager {
             System.err.println("[DB] getStats error: " + e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Check if a user exists in the database.
+     */
+    public boolean userExists(String username) {
+        String sql = "SELECT 1 FROM users WHERE username = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            System.err.println("[DB] userExists error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Add a bidirectional friendship between two users.
+     * @return true if the friendship was added, false if it already exists or an error occurred.
+     */
+    public boolean addFriend(String user1, String user2) {
+        String sql = "INSERT OR IGNORE INTO friends (user1, user2) VALUES (?, ?)";
+        try {
+            // Insert both directions
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, user1);
+                ps.setString(2, user2);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, user2);
+                ps.setString(2, user1);
+                ps.executeUpdate();
+            }
+            System.out.println("[DB] Added friendship: " + user1 + " <-> " + user2);
+            return true;
+        } catch (SQLException e) {
+            System.err.println("[DB] addFriend error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Remove a bidirectional friendship between two users.
+     */
+    public void removeFriend(String user1, String user2) {
+        String sql = "DELETE FROM friends WHERE user1 = ? AND user2 = ?";
+        try {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, user1);
+                ps.setString(2, user2);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, user2);
+                ps.setString(2, user1);
+                ps.executeUpdate();
+            }
+            System.out.println("[DB] Removed friendship: " + user1 + " <-> " + user2);
+        } catch (SQLException e) {
+            System.err.println("[DB] removeFriend error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get all friends of a user.
+     * @return array of friend usernames
+     */
+    public String[] getFriends(String username) {
+        String sql = "SELECT user2 FROM friends WHERE user1 = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ResultSet rs = ps.executeQuery();
+            java.util.List<String> friends = new java.util.ArrayList<>();
+            while (rs.next()) {
+                friends.add(rs.getString("user2"));
+            }
+            return friends.toArray(new String[0]);
+        } catch (SQLException e) {
+            System.err.println("[DB] getFriends error: " + e.getMessage());
+            return new String[0];
+        }
     }
 }

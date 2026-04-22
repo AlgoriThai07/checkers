@@ -109,8 +109,11 @@ public class GuiClient extends Application {
                 case STATS_UPDATE:
                     lobbyController.onStatsUpdate(message);
                     break;
-                case ONLINE_PLAYERS_UPDATE:
-                    lobbyController.onOnlinePlayersUpdate(message);
+                case FRIENDS_LIST_UPDATE:
+                    lobbyController.onFriendsListUpdate(message);
+                    break;
+                case ADD_FRIEND:
+                    lobbyController.onAddFriendResponse(message);
                     break;
                 default:
                     break;
