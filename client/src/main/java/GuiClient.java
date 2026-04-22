@@ -120,6 +120,8 @@ public class GuiClient extends Application {
 
         if (sceneName.equals("lobby")) {
             lobbyController.reset();
+        } else if (sceneName.equals("login")) {
+            loginController.reset();
         }
         primaryStage.setScene(sceneMap.get(sceneName));
     }

@@ -157,4 +157,13 @@ public class LoginController {
         loginButton.setDisable(false);
         loginButton.setText("LOGIN");
     }
+
+    public void reset() {
+        loginButton.setDisable(false);
+        loginButton.setText("LOGIN");
+        passwordField.clear();
+        usernameField.clear();
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
+    }
 }

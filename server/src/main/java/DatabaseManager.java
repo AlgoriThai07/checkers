@@ -1,13 +1,7 @@
-package server;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import org.mindrot.jbcrypt.BCrypt;
 import model.User;
+import org.mindrot.jbcrypt.BCrypt;
+
+import java.sql.*;
 
 public class DatabaseManager {
 
@@ -130,7 +124,7 @@ public class DatabaseManager {
                 ps.executeUpdate();
             }
 
-            System.out.println("[DB] Recorded result - Winner: " + winner + ", Loser: " + loser + ", Draw: " + isDraw);
+            System.out.println("[DB] Recorded result — Winner: " + winner + ", Loser: " + loser + ", Draw: " + isDraw);
         } catch (SQLException e) {
             System.err.println("[DB] Failed to record result: " + e.getMessage());
         }
@@ -140,7 +134,7 @@ public class DatabaseManager {
      * Increment a specific stat column for a user.
      */
     private void updateStat(String username, String column) throws SQLException {
-        // column is always one of "wins", "losses", "draws" - safe to inline
+        // column is always one of "wins", "losses", "draws" — safe to inline
         String sql = "UPDATE users SET " + column + " = " + column + " + 1 WHERE username = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, username);

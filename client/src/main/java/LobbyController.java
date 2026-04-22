@@ -28,6 +28,10 @@ public class LobbyController {
     private TextField searchField;
     private Label welcomeLabel;
 
+    private Label winsLabel;
+    private Label lossesLabel;
+    private Label drawsLabel;
+
     public LobbyController(GuiClient app) {
         this.app = app;
     }
@@ -86,6 +90,13 @@ public class LobbyController {
         return topBar;
     }
 
+    private Label createStatBadge(String text, String colorHex) {
+        Label badge = new Label(text);
+        badge.setFont(Font.font("System", FontWeight.BOLD, 16));
+        badge.setStyle("-fx-background-color: " + colorHex + "; -fx-text-fill: #151311; -fx-padding: 6 15 6 15; -fx-background-radius: 12;");
+        return badge;
+    }
+
     private VBox createCenterContent() {
         VBox centerContent = new VBox(30);
         centerContent.setPadding(new Insets(40, 40, 40, 40));
@@ -97,6 +108,17 @@ public class LobbyController {
         welcomeLabel.getStyleClass().add("welcome-label");
         welcomeLabel.setStyle("-fx-text-fill: #e8e6e3;");
 
+        // Stats Banner
+        HBox statsBanner = new HBox(15);
+        statsBanner.setAlignment(Pos.CENTER);
+        statsBanner.setPadding(new Insets(10, 0, 20, 0));
+
+        winsLabel = createStatBadge("0 W", "#81b64c");    // Lime Green
+        lossesLabel = createStatBadge("0 L", "#e05252");  // Soft Red
+        drawsLabel = createStatBadge("0 D", "#a29f9c");   // Grey
+
+        statsBanner.getChildren().addAll(winsLabel, lossesLabel, drawsLabel);
+
         // Game options container
         VBox gameOptionsBox = new VBox(20);
         gameOptionsBox.setAlignment(Pos.CENTER);
@@ -105,27 +127,27 @@ public class LobbyController {
         gameOptionsBox.setMaxWidth(500);
 
         // Play buttons
-        Button quickPlayButton = new Button("QUICK PLAY");
+        Button quickPlayButton = new Button("PLAY VS BOT");
         quickPlayButton.setPrefHeight(60);
         quickPlayButton.setMaxWidth(Double.MAX_VALUE);
         quickPlayButton.getStyleClass().add("primary-button");
         quickPlayButton.setOnAction(e -> handleQuickPlay());
 
-        Button playWithFriendButton = new Button("PLAY WITH FRIEND");
-        playWithFriendButton.setPrefHeight(60);
-        playWithFriendButton.setMaxWidth(Double.MAX_VALUE);
-        playWithFriendButton.getStyleClass().add("primary-button");
-        playWithFriendButton.setOnAction(e -> handlePlayWithFriend());
+        Button playLocalButton = new Button("PLAY LOCAL VS FRIEND");
+        playLocalButton.setPrefHeight(60);
+        playLocalButton.setMaxWidth(Double.MAX_VALUE);
+        playLocalButton.getStyleClass().add("primary-button");
+        playLocalButton.setOnAction(e -> handleCreateGame()); // Assuming this will be hooked up later
 
-        Button createGameButton = new Button("CREATE GAME");
-        createGameButton.setPrefHeight(60);
-        createGameButton.setMaxWidth(Double.MAX_VALUE);
-        createGameButton.getStyleClass().add("secondary-button");
-        createGameButton.setOnAction(e -> handleCreateGame());
-        createGameButton.setStyle(
-                "-fx-background-color: #3d3935; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4; -fx-border-width: 0;");
+        Button playOnlineButton = new Button("PLAY ONLINE VS FRIEND");
+        playOnlineButton.setPrefHeight(60);
+        playOnlineButton.setMaxWidth(Double.MAX_VALUE);
+        playOnlineButton.getStyleClass().add("primary-button");
+        playOnlineButton.setOnAction(e -> handlePlayWithFriend());
 
-        gameOptionsBox.getChildren().addAll(quickPlayButton, playWithFriendButton, createGameButton);
+        gameOptionsBox.getChildren().addAll(quickPlayButton, playLocalButton, playOnlineButton);
+
+        centerContent.getChildren().addAll(welcomeLabel, statsBanner, gameOptionsBox);
 
         // Online players section
         VBox onlinePlayersBox = new VBox(15);
@@ -158,7 +180,8 @@ public class LobbyController {
 
         onlinePlayersBox.getChildren().addAll(onlinePlayersLabel, searchField, onlinePlayersList);
 
-        centerContent.getChildren().addAll(welcomeLabel, gameOptionsBox, onlinePlayersBox);
+        // Remove the old direct addition of welcomeLabel and gameOptionsBox since we did it above
+        centerContent.getChildren().addAll(onlinePlayersBox);
 
         return centerContent;
     }
@@ -317,8 +340,19 @@ public class LobbyController {
 
     public void onAuthSuccess(Message message) {
         this.username = app.getUsername();
-        if (welcomeLabel != null)
-            welcomeLabel.setText("Welcome, " + this.username + "!");
+        if (welcomeLabel != null) {
+            welcomeLabel.setText("Welcome, " + username + "!");
+        }
+
+        // Parse stats if attached
+        if (message.getContent() != null && message.getContent().startsWith("Login successful:")) {
+            String[] parts = message.getContent().split(":");
+            if (parts.length == 4) {
+                if (winsLabel != null) winsLabel.setText(parts[1] + " W");
+                if (lossesLabel != null) lossesLabel.setText(parts[2] + " L");
+                if (drawsLabel != null) drawsLabel.setText(parts[3] + " D");
+            }
+        }
     }
 
     public void reset() {

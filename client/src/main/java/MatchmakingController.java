@@ -132,7 +132,6 @@ public class MatchmakingController {
         matchmakingBox.getChildren().addAll(
             statusLabel,
             progressIndicator,
-            timerLabel,
             infoLabel,
             playersInfoBox,
             cancelButton
