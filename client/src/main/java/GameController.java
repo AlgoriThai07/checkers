@@ -22,6 +22,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.StrokeType;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
@@ -60,6 +61,8 @@ public class GameController {
     private Label statusLabel;
     private Label p1NameLabel;
     private Label p2NameLabel;
+    private Label p1CapturedLabel;
+    private Label p2CapturedLabel;
 
     public GameController(GuiClient app) {
         this.app = app;
@@ -115,6 +118,11 @@ public class GameController {
         Label capturedLabel = new Label("Captured: 0");
         capturedLabel.setFont(Font.font("System", 13));
         capturedLabel.getStyleClass().add("secondary-text");
+
+        if (isPlayer1)
+            p1CapturedLabel = capturedLabel;
+        else
+            p2CapturedLabel = capturedLabel;
 
         // Spacer
         Region spacer = new Region();
@@ -329,14 +337,14 @@ public class GameController {
     }
 
     private int getLogicalRow(int physicalRow) {
-        if (myColor != null && myColor.equals("BLACK")) {
+        if (myColor != null && myColor.equals("RED")) {
             return 7 - physicalRow;
         }
         return physicalRow;
     }
 
     private int getLogicalCol(int physicalCol) {
-        if (myColor != null && myColor.equals("BLACK")) {
+        if (myColor != null && myColor.equals("RED")) {
             return 7 - physicalCol;
         }
         return physicalCol;
@@ -363,6 +371,32 @@ public class GameController {
                 }
             }
         }
+        updateCapturedCounts(state);
+    }
+
+    private void updateCapturedCounts(GameState state) {
+        if (state == null) return;
+        PieceType[][] board = state.getBoard();
+        int redCount = 0;
+        int blackCount = 0;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                if (board[r][c] == PieceType.RED || board[r][c] == PieceType.RED_KING) redCount++;
+                if (board[r][c] == PieceType.BLACK || board[r][c] == PieceType.BLACK_KING) blackCount++;
+            }
+        }
+        // Each player starts with 12 pieces
+        int redCaptured = 12 - blackCount;  // Red captured this many black pieces
+        int blackCaptured = 12 - redCount;  // Black captured this many red pieces
+
+        // p1 is always "me" (bottom), p2 is opponent (top)
+        if (myColor != null && myColor.equals("RED")) {
+            if (p1CapturedLabel != null) p1CapturedLabel.setText("Captured: " + redCaptured);
+            if (p2CapturedLabel != null) p2CapturedLabel.setText("Captured: " + blackCaptured);
+        } else {
+            if (p1CapturedLabel != null) p1CapturedLabel.setText("Captured: " + blackCaptured);
+            if (p2CapturedLabel != null) p2CapturedLabel.setText("Captured: " + redCaptured);
+        }
     }
 
     private void highlightSquare(int row, int col) {
@@ -372,6 +406,7 @@ public class GameController {
         highlight.setFill(Color.rgb(129, 182, 76, 0.45)); // lime green
         highlight.setStroke(Color.web("#81b64c"));
         highlight.setStrokeWidth(2);
+        highlight.setStrokeType(StrokeType.INSIDE);
         highlight.widthProperty().bind(boardCells[physR][physC].widthProperty());
         highlight.heightProperty().bind(boardCells[physR][physC].heightProperty());
         highlight.setMouseTransparent(true); // Don't steal cell clicks
@@ -385,6 +420,7 @@ public class GameController {
         sel.setFill(Color.rgb(255, 200, 0, 0.35));
         sel.setStroke(Color.web("#ffcc00"));
         sel.setStrokeWidth(3.0);
+        sel.setStrokeType(StrokeType.INSIDE);
         sel.setMouseTransparent(true);
         sel.widthProperty().bind(boardCells[physR][physC].widthProperty());
         sel.heightProperty().bind(boardCells[physR][physC].heightProperty());
@@ -603,8 +639,9 @@ public class GameController {
         dialogRoot.setStyle("-fx-background-color: #262421; -fx-background-radius: 12; -fx-border-color: #3d3935; -fx-border-radius: 12; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 10);");
 
         // Icon
-        Label iconLabel = new Label(isGoldIcon ? "\uD83C\uDFC6" : "\uD83C\uDFC1"); // Trophy or Flag
-        iconLabel.setStyle("-fx-font-size: 32; -fx-text-fill: #e6a845; -fx-background-color: #3e2b21; -fx-background-radius: 50; -fx-padding: 15;");
+        Label iconLabel = new Label(isGoldIcon ? "★" : "⚑");
+        iconLabel.setStyle("-fx-font-size: 48; -fx-text-fill: #e6a845; -fx-background-color: #3e2b21; -fx-background-radius: 50; -fx-padding: 20 28 20 28;");
+        iconLabel.setAlignment(Pos.CENTER);
 
         // Title
         Label titleLabel = new Label(title);

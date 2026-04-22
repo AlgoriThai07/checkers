@@ -69,7 +69,7 @@ public class LobbyController {
         topBar.getStyleClass().add("top-bar");
 
         // Title
-        Label titleLabel = new Label("CHECKERS");
+        Label titleLabel = new Label("CHECKERS ONLINE");
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 24));
         titleLabel.getStyleClass().add("title");
 
@@ -275,27 +275,7 @@ public class LobbyController {
             }
         });
 
-        // Friend actions
-        VBox friendActionsBox = new VBox(10);
-        friendActionsBox.setAlignment(Pos.CENTER);
-
-        Button inviteButton = new Button("Invite to Game");
-        inviteButton.setPrefHeight(40);
-        inviteButton.setMaxWidth(Double.MAX_VALUE);
-        inviteButton.getStyleClass().add("primary-button");
-        inviteButton.setOnAction(e -> handleInviteFriend());
-
-        Button viewProfileButton = new Button("View Profile");
-        viewProfileButton.setPrefHeight(40);
-        viewProfileButton.setMaxWidth(Double.MAX_VALUE);
-        viewProfileButton.getStyleClass().add("secondary-button");
-        viewProfileButton.setOnAction(e -> handleViewProfile());
-        viewProfileButton.setStyle(
-                "-fx-background-color: #3d3935; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4; -fx-border-width: 0;");
-
-        friendActionsBox.getChildren().addAll(inviteButton, viewProfileButton);
-
-        friendsPanel.getChildren().addAll(friendsHeader, friendsList, friendActionsBox);
+        friendsPanel.getChildren().addAll(friendsHeader, friendsList);
 
         return friendsPanel;
     }
@@ -324,19 +304,7 @@ public class LobbyController {
         System.out.println("Add Friend clicked");
     }
 
-    private void handleInviteFriend() {
-        String selectedFriend = friendsList.getSelectionModel().getSelectedItem();
-        if (selectedFriend != null) {
-            System.out.println("Invite friend: " + selectedFriend);
-        }
-    }
 
-    private void handleViewProfile() {
-        String selectedFriend = friendsList.getSelectionModel().getSelectedItem();
-        if (selectedFriend != null) {
-            System.out.println("View profile: " + selectedFriend);
-        }
-    }
 
     public void onAuthSuccess(Message message) {
         this.username = app.getUsername();
