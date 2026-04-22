@@ -25,7 +25,15 @@ public class GameManager {
             session.startGame();
             System.out.println("AI game started for " + client.getUsername());
         }
-        // If user choose vs human mode
+        // If user choose local hot-seat mode
+        else if ("LOCAL".equalsIgnoreCase(mode)) {
+            // Create a local game with no second client and no AI
+            GameSession session = new GameSession(client, null, null, this, databaseManager);
+            activeSessions.add(session);
+            session.startGame();
+            System.out.println("Local hot-seat game started for " + client.getUsername());
+        }
+        // If user choose vs human mode (online PVP)
         else {
             // Add to queue
             waitingQueue.add(client);
