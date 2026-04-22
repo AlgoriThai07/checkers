@@ -231,17 +231,17 @@ public class GameController {
         piece.getStyleClass().add(isGreen ? "player1-piece" : "player2-piece");
 
         if (isGreen) {
-            piece.setFill(Color.web("#81b64c")); // Lime
-            piece.setStroke(Color.web("#5b7a3a"));
+            piece.setFill(Color.web("#2ecc71")); // Green
+            piece.setStroke(Color.web("#1a9c54"));
         } else {
-            piece.setFill(Color.web("#262421")); // Dark Slate
-            piece.setStroke(Color.web("#151311"));
+            piece.setFill(Color.web("#9b59b6")); // Purple
+            piece.setStroke(Color.web("#6c3483"));
         }
         piece.setStrokeWidth(3);
 
         if (isKing) {
             piece.setStrokeWidth(5);
-            piece.setStroke(Color.web("#f0c040")); // Gold marker for King
+            piece.setStroke(Color.web("#FFD166")); // Neon Gold marker for King
         }
 
         return piece;
@@ -636,36 +636,36 @@ public class GameController {
         VBox dialogRoot = new VBox(20);
         dialogRoot.setAlignment(Pos.CENTER);
         dialogRoot.setPadding(new Insets(40, 50, 40, 50));
-        dialogRoot.setStyle("-fx-background-color: #262421; -fx-background-radius: 12; -fx-border-color: #3d3935; -fx-border-radius: 12; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 10);");
+        dialogRoot.setStyle("-fx-background-color: #111419; -fx-background-radius: 12; -fx-border-color: rgba(0,240,255,0.3); -fx-border-radius: 12; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,240,255,0.2), 25, 0, 0, 0);");
 
         // Icon
         Label iconLabel = new Label(isGoldIcon ? "★" : "⚑");
-        iconLabel.setStyle("-fx-font-size: 48; -fx-text-fill: #e6a845; -fx-background-color: #3e2b21; -fx-background-radius: 50; -fx-padding: 20 28 20 28;");
+        iconLabel.setStyle("-fx-font-size: 48; -fx-text-fill: #FFD166; -fx-background-color: #1a2030; -fx-background-radius: 50; -fx-padding: 20 28 20 28;");
         iconLabel.setAlignment(Pos.CENTER);
 
         // Title
         Label titleLabel = new Label(title);
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 26));
-        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.setTextFill(Color.web("#e6eef6"));
 
         // Subtitle
         Label subLabel = new Label(subtitle);
         subLabel.setFont(Font.font("System", 16));
-        subLabel.setTextFill(Color.web("#c7c4c0"));
+        subLabel.setTextFill(Color.web("#9aa6b2"));
 
         // Buttons
         HBox buttonBox = new HBox(15);
         buttonBox.setAlignment(Pos.CENTER);
 
         Button leftBtn = new Button(leftBtnText);
-        leftBtn.setStyle("-fx-background-color: #81b64c; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
+        leftBtn.setStyle("-fx-background-color: #00f0ff; -fx-text-fill: #0b0f14; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,240,255,0.3), 10, 0, 0, 0);");
         leftBtn.setOnAction(e -> {
             dialogStage.close();
             onLeftClick.run();
         });
 
         Button rightBtn = new Button(rightBtnText);
-        rightBtn.setStyle("-fx-background-color: #3d3935; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand;");
+        rightBtn.setStyle("-fx-background-color: #1a1f26; -fx-text-fill: #e6eef6; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-border-color: rgba(255,255,255,0.1); -fx-border-radius: 8; -fx-border-width: 1;");
         rightBtn.setOnAction(e -> {
             dialogStage.close();
             onRightClick.run();
