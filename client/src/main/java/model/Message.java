@@ -18,7 +18,10 @@ public class Message implements Serializable {
         GAME_OVER,
         CHAT,
         PLAY_AGAIN,
-        QUIT
+        QUIT,
+        DRAW_OFFER,
+        DRAW_ACCEPT,
+        DRAW_DECLINE
     }
 
     private MessageType type;

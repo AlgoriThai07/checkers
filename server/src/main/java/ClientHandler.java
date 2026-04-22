@@ -60,6 +60,15 @@ public class ClientHandler extends Thread {
                     case QUIT:
                         handleQuit();
                         break;
+                    case DRAW_OFFER:
+                        if (currentSession != null) currentSession.forwardDrawOffer(this);
+                        break;
+                    case DRAW_ACCEPT:
+                        if (currentSession != null) currentSession.handleDrawAccept(this);
+                        break;
+                    case DRAW_DECLINE:
+                        if (currentSession != null) currentSession.handleDrawDecline(this);
+                        break;
                     default:
                         break;
                 }

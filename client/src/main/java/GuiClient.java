@@ -100,6 +100,12 @@ public class GuiClient extends Application {
                     gameController.onOpponentQuit(message);
                     switchToScene("lobby");
                     break;
+                case DRAW_OFFER:
+                    gameController.onDrawOffer(message);
+                    break;
+                case DRAW_DECLINE:
+                    gameController.onDrawDecline(message);
+                    break;
                 default:
                     break;
             }

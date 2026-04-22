@@ -457,6 +457,36 @@ public class GameSession {
     }
 
     // ========================================
+    // DRAW OFFER / ACCEPT / DECLINE
+    // ========================================
+
+    public void forwardDrawOffer(ClientHandler sender) {
+        Message drawOffer = new Message(MessageType.DRAW_OFFER, sender.getUsername() + " offers a draw");
+        if (sender == redPlayer && blackPlayer != null) {
+            blackPlayer.sendMessage(drawOffer);
+        } else if (sender == blackPlayer) {
+            redPlayer.sendMessage(drawOffer);
+        }
+    }
+
+    public void handleDrawAccept(ClientHandler sender) {
+        // Set game status to DRAW and broadcast game over to both players
+        gameState.setStatus("DRAW");
+        broadcastGameOver();
+        gameManager.removeSession(this);
+    }
+
+    public void handleDrawDecline(ClientHandler sender) {
+        // Notify the original offerer that the draw was declined
+        Message decline = new Message(MessageType.DRAW_DECLINE, "Draw offer declined");
+        if (sender == redPlayer && blackPlayer != null) {
+            blackPlayer.sendMessage(decline);
+        } else if (sender == blackPlayer) {
+            redPlayer.sendMessage(decline);
+        }
+    }
+
+    // ========================================
     // PLAY AGAIN / QUIT
     // ========================================
 

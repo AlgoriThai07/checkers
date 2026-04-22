@@ -537,9 +537,28 @@ public class GameController {
                 }
             );
         } else {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Offer draw sent to opponent.", ButtonType.OK);
-            alert.showAndWait();
+            // Online PvP: send draw offer to opponent via server
+            app.send(new Message(MessageType.DRAW_OFFER));
+            chatList.getItems().add("[System] Draw offer sent to opponent...");
         }
+    }
+
+    public void onDrawOffer(Message message) {
+        // Opponent is offering a draw — show accept/decline modal
+        showCustomModal(
+            "Draw Offer",
+            "Your opponent is offering a draw.",
+            false,
+            "✓ Accept",
+            "✗ Decline",
+            () -> app.send(new Message(MessageType.DRAW_ACCEPT)),
+            () -> app.send(new Message(MessageType.DRAW_DECLINE))
+        );
+    }
+
+    public void onDrawDecline(Message message) {
+        // Our draw offer was declined — notify and continue playing
+        chatList.getItems().add("[System] Opponent declined your draw offer.");
     }
 
     private void handleResign() {
