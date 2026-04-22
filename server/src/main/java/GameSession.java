@@ -106,10 +106,11 @@ public class GameSession {
             sender.sendMessage(new Message(MessageType.INVALID_MOVE, "Invalid move"));
             return;
         }
-
+        // Apply the move to the board
         applyMove(fullMove);
+        // Check if the game is over
         checkGameOver();
-
+        // If the game is not over, switch turns and broadcast
         if (gameState.getStatus().equals("IN_PROGRESS")) {
             switchTurnAndBroadcast();
         } else {
@@ -118,6 +119,7 @@ public class GameSession {
     }
 
     private void switchTurnAndBroadcast() {
+        // Switch turn and calculate valid moves for next turn
         String nextTurn = gameState.getCurrentTurn().equals("RED") ? "BLACK" : "RED";
         gameState.setCurrentTurn(nextTurn);
         gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), nextTurn));
@@ -135,26 +137,30 @@ public class GameSession {
 
         broadcastGameUpdate();
 
-        // If AI game and it's BLACK's turn, let AI move
+        // If AI game and BLACK turn, let AI move
         if (isAIGame && nextTurn.equals("BLACK")) {
             handleAIMove();
         }
     }
 
     private void handleAIMove() {
+        // Get AI move
         Move aiMove = aiPlayer.getMove(gameState);
         if (aiMove != null) {
             // Find matching valid move for proper captured list
             Move fullAiMove = findMatchingValidMove(aiMove);
-            if (fullAiMove == null) fullAiMove = aiMove;
-
+            if (fullAiMove == null) {
+               fullAiMove = aiMove;
+            }
+            // Apply AI move
             applyMove(fullAiMove);
+            // Check if the game is over
             checkGameOver();
-
+            // If the game is not over, switch turns and broadcast
             if (gameState.getStatus().equals("IN_PROGRESS")) {
                 gameState.setCurrentTurn("RED");
                 gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), "RED"));
-
+                // If human has no valid moves, AI wins
                 if (gameState.getValidMoves().isEmpty()) {
                     gameState.setStatus("BLACK_WIN");
                     broadcastGameOver();
@@ -162,11 +168,12 @@ public class GameSession {
                     broadcastGameUpdate();
                 }
             } else {
+                // Broadcast game over
                 broadcastGameOver();
             }
         }
     }
-
+    // Find matching valid move from list of valid moves
     private Move findMatchingValidMove(Move move) {
         for (Move validMove : gameState.getValidMoves()) {
             if (validMove.getFrom().equals(move.getFrom()) && validMove.getTo().equals(move.getTo())) {
