@@ -508,6 +508,21 @@ public class GameController {
     }
 
     private void handleOfferDraw() {
+        if (isLocalGame) {
+            showCustomModal(
+                "Draw",
+                "It's a draw!",
+                true,
+                "↻ Play Again",
+                "← Lobby",
+                () -> app.send(new Message(MessageType.PLAY_AGAIN)),
+                () -> {
+                    app.send(new Message(MessageType.QUIT));
+                    app.switchToScene("lobby");
+                }
+            );
+            return;
+        }
         if (gameState != null && (gameState.getBlackPlayer().equals("AI") || gameState.getRedPlayer().equals("AI"))) {
             showCustomModal(
                 "Draw Accepted",
