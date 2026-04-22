@@ -261,15 +261,17 @@ public class GameSession {
             blackPlayer.sendMessage(gameOver);
         }
 
-        // Record result in database
-        String redName = gameState.getRedPlayer();
-        String blackName = gameState.getBlackPlayer();
-        if (gameState.getStatus().equals("RED_WIN")) {
-            databaseManager.recordResult(redName, blackName, false);
-        } else if (gameState.getStatus().equals("BLACK_WIN")) {
-            databaseManager.recordResult(blackName, redName, false);
-        } else if (gameState.getStatus().equals("DRAW")) {
-            databaseManager.recordResult(redName, blackName, true);
+        // Only record results for online PvP games
+        if (!isAIGame && !isLocalGame) {
+            String redName = gameState.getRedPlayer();
+            String blackName = gameState.getBlackPlayer();
+            if (gameState.getStatus().equals("RED_WIN")) {
+                databaseManager.recordResult(redName, blackName, false);
+            } else if (gameState.getStatus().equals("BLACK_WIN")) {
+                databaseManager.recordResult(blackName, redName, false);
+            } else if (gameState.getStatus().equals("DRAW")) {
+                databaseManager.recordResult(redName, blackName, true);
+            }
         }
     }
 
