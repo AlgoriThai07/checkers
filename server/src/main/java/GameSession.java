@@ -32,19 +32,21 @@ public class GameSession {
 
         // Link handlers to this session
         redPlayer.setCurrentSession(this);
+        // If a PvP game
         if (blackPlayer != null) {
             blackPlayer.setCurrentSession(this);
         }
     }
 
     public void startGame() {
+        // Init game
         initializeBoard();
         gameState.setRedPlayer(redPlayer.getUsername());
         gameState.setBlackPlayer(isAIGame ? "AI" : blackPlayer.getUsername());
         gameState.setCurrentTurn("RED");
         gameState.setStatus("IN_PROGRESS");
 
-        // Calculate valid moves for RED (first player)
+        // Calculate valid moves for RED
         gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), "RED"));
 
         // Send GAME_START to both players
@@ -60,7 +62,7 @@ public class GameSession {
 
     private void initializeBoard() {
         PieceType[][] board = new PieceType[8][8];
-
+        // Set all squares to empty first
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 board[r][c] = PieceType.EMPTY;
@@ -88,12 +90,11 @@ public class GameSession {
         gameState.setBoard(board);
     }
 
-    // ========================================
-    // MOVE HANDLING
-    // ========================================
 
     public synchronized void handleMove(ClientHandler sender, Move move) {
+        // Get color of player wanting to move
         String senderColor = getPlayerColor(sender);
+        // If not his turn, not allow to move
         if (senderColor == null || !senderColor.equals(gameState.getCurrentTurn())) {
             sender.sendMessage(new Message(MessageType.INVALID_MOVE, "Not your turn"));
             return;
@@ -105,10 +106,11 @@ public class GameSession {
             sender.sendMessage(new Message(MessageType.INVALID_MOVE, "Invalid move"));
             return;
         }
-
+        // Apply the move to the board
         applyMove(fullMove);
+        // Check if the game is over
         checkGameOver();
-
+        // If the game is not over, switch turns and broadcast
         if (gameState.getStatus().equals("IN_PROGRESS")) {
             switchTurnAndBroadcast();
         } else {
@@ -117,6 +119,7 @@ public class GameSession {
     }
 
     private void switchTurnAndBroadcast() {
+        // Switch turn and calculate valid moves for next turn
         String nextTurn = gameState.getCurrentTurn().equals("RED") ? "BLACK" : "RED";
         gameState.setCurrentTurn(nextTurn);
         gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), nextTurn));
@@ -134,26 +137,30 @@ public class GameSession {
 
         broadcastGameUpdate();
 
-        // If AI game and it's BLACK's turn, let AI move
+        // If AI game and BLACK turn, let AI move
         if (isAIGame && nextTurn.equals("BLACK")) {
             handleAIMove();
         }
     }
 
     private void handleAIMove() {
+        // Get AI move
         Move aiMove = aiPlayer.getMove(gameState);
         if (aiMove != null) {
             // Find matching valid move for proper captured list
             Move fullAiMove = findMatchingValidMove(aiMove);
-            if (fullAiMove == null) fullAiMove = aiMove;
-
+            if (fullAiMove == null) {
+               fullAiMove = aiMove;
+            }
+            // Apply AI move
             applyMove(fullAiMove);
+            // Check if the game is over
             checkGameOver();
-
+            // If the game is not over, switch turns and broadcast
             if (gameState.getStatus().equals("IN_PROGRESS")) {
                 gameState.setCurrentTurn("RED");
                 gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), "RED"));
-
+                // If human has no valid moves, AI wins
                 if (gameState.getValidMoves().isEmpty()) {
                     gameState.setStatus("BLACK_WIN");
                     broadcastGameOver();
@@ -161,11 +168,12 @@ public class GameSession {
                     broadcastGameUpdate();
                 }
             } else {
+                // Broadcast game over
                 broadcastGameOver();
             }
         }
     }
-
+    // Find matching valid move from list of valid moves
     private Move findMatchingValidMove(Move move) {
         for (Move validMove : gameState.getValidMoves()) {
             if (validMove.getFrom().equals(move.getFrom()) && validMove.getTo().equals(move.getTo())) {

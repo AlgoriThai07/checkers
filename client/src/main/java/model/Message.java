@@ -27,30 +27,25 @@ public class Message implements Serializable {
     private Move move;
     private String content;
 
-    // Constructor: MessageType only
     public Message(MessageType type) {
         this.type = type;
     }
 
-    // Constructor: MessageType + content
     public Message(MessageType type, String content) {
         this.type = type;
         this.content = content;
     }
 
-    // Constructor: MessageType + GameState
     public Message(MessageType type, GameState gameState) {
         this.type = type;
         this.gameState = gameState;
     }
 
-    // Constructor: MessageType + Move
     public Message(MessageType type, Move move) {
         this.type = type;
         this.move = move;
     }
 
-    // Full constructor
     public Message(MessageType type, String sender, GameState gameState, Move move, String content) {
         this.type = type;
         this.sender = sender;

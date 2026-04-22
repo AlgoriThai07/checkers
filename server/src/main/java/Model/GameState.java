@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameState implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 42L;
 
     private PieceType[][] board;
     private String currentTurn;
