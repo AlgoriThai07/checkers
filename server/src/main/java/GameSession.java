@@ -17,6 +17,7 @@ public class GameSession {
     private GameManager gameManager;
     private DatabaseManager databaseManager;
     private boolean isAIGame;
+    private boolean isLocalGame;
     private boolean redWantsPlayAgain = false;
     private boolean blackWantsPlayAgain = false;
 
@@ -28,6 +29,7 @@ public class GameSession {
         this.gameManager = gameManager;
         this.databaseManager = databaseManager;
         this.isAIGame = (aiPlayer != null);
+        this.isLocalGame = (blackPlayer == null && aiPlayer == null);
         this.gameState = new GameState();
 
         // Link handlers to this session
@@ -42,7 +44,13 @@ public class GameSession {
         // Init game
         initializeBoard();
         gameState.setRedPlayer(redPlayer.getUsername());
-        gameState.setBlackPlayer(isAIGame ? "AI" : blackPlayer.getUsername());
+        if (isAIGame) {
+            gameState.setBlackPlayer("AI");
+        } else if (isLocalGame) {
+            gameState.setBlackPlayer("Opponent");
+        } else {
+            gameState.setBlackPlayer(blackPlayer.getUsername());
+        }
         gameState.setCurrentTurn("RED");
         gameState.setStatus("IN_PROGRESS");
 
@@ -52,7 +60,7 @@ public class GameSession {
         // Send GAME_START to both players
         Message startMessage = new Message(MessageType.GAME_START, gameState);
         redPlayer.sendMessage(startMessage);
-        if (!isAIGame) {
+        if (blackPlayer != null) {
             blackPlayer.sendMessage(startMessage);
         }
 
@@ -92,12 +100,18 @@ public class GameSession {
 
 
     public synchronized void handleMove(ClientHandler sender, Move move) {
-        // Get color of player wanting to move
-        String senderColor = getPlayerColor(sender);
-        // If not his turn, not allow to move
-        if (senderColor == null || !senderColor.equals(gameState.getCurrentTurn())) {
-            sender.sendMessage(new Message(MessageType.INVALID_MOVE, "Not your turn"));
-            return;
+        // In local mode, the single client controls both sides
+        String senderColor;
+        if (isLocalGame) {
+            senderColor = gameState.getCurrentTurn();
+        } else {
+            // Get color of player wanting to move
+            senderColor = getPlayerColor(sender);
+            // If not his turn, not allow to move
+            if (senderColor == null || !senderColor.equals(gameState.getCurrentTurn())) {
+                sender.sendMessage(new Message(MessageType.INVALID_MOVE, "Not your turn"));
+                return;
+            }
         }
 
         // Find matching valid move (has captured list populated)
@@ -235,7 +249,7 @@ public class GameSession {
     private void broadcastGameUpdate() {
         Message update = new Message(MessageType.GAME_UPDATE, gameState);
         redPlayer.sendMessage(update);
-        if (!isAIGame) {
+        if (blackPlayer != null) {
             blackPlayer.sendMessage(update);
         }
     }
@@ -243,7 +257,7 @@ public class GameSession {
     private void broadcastGameOver() {
         Message gameOver = new Message(MessageType.GAME_OVER, gameState);
         redPlayer.sendMessage(gameOver);
-        if (!isAIGame) {
+        if (blackPlayer != null) {
             blackPlayer.sendMessage(gameOver);
         }
 
@@ -432,8 +446,8 @@ public class GameSession {
     // ========================================
 
     public void forwardChat(ClientHandler sender, Message chatMessage) {
-        if (isAIGame) return;
-        if (sender == redPlayer) {
+        if (isAIGame || isLocalGame) return;
+        if (sender == redPlayer && blackPlayer != null) {
             blackPlayer.sendMessage(chatMessage);
         } else {
             redPlayer.sendMessage(chatMessage);
@@ -451,9 +465,9 @@ public class GameSession {
             blackWantsPlayAgain = true;
         }
 
-        if (isAIGame && redWantsPlayAgain) {
+        if ((isAIGame || isLocalGame) && redWantsPlayAgain) {
             startGame();
-        } else if (!isAIGame && redWantsPlayAgain && blackWantsPlayAgain) {
+        } else if (!isAIGame && !isLocalGame && redWantsPlayAgain && blackWantsPlayAgain) {
             startGame();
         }
     }

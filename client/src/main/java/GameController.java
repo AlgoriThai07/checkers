@@ -44,6 +44,7 @@ public class GameController {
     private GuiClient app;
     private GameState gameState;
     private String myColor; // "RED" or "BLACK"
+    private boolean isLocalGame = false;
 
     // Component tracking
     private GridPane boardGrid;
@@ -437,10 +438,11 @@ public class GameController {
         int col = getLogicalCol(physCol);
 
         PieceType piece = gameState.getBoard()[row][col];
-        String myColorStr = myColor;
+        // In local mode, use the current turn's color for ownership check
+        String activeColor = isLocalGame ? gameState.getCurrentTurn() : myColor;
 
-        // Check clicked piece belongs to this player
-        boolean ownsPiece = myColorStr.equals("RED")
+        // Check clicked piece belongs to the active player
+        boolean ownsPiece = activeColor.equals("RED")
                 ? (piece == PieceType.RED || piece == PieceType.RED_KING)
                 : (piece == PieceType.BLACK || piece == PieceType.BLACK_KING);
 
@@ -487,6 +489,7 @@ public class GameController {
     }
 
     private boolean isMyTurn() {
+        if (isLocalGame) return gameState != null;
         return gameState != null && myColor != null && myColor.equals(gameState.getCurrentTurn());
     }
 
@@ -551,6 +554,7 @@ public class GameController {
 
     public void onGameStart(Message message) {
         gameState = message.getGameState();
+        isLocalGame = "Opponent".equals(gameState.getBlackPlayer());
         myColor = gameState.getRedPlayer().equals(app.getUsername()) ? "RED" : "BLACK";
 
         String myDisplayColor = myColor.equals("RED") ? "Green" : "Black";
@@ -700,7 +704,12 @@ public class GameController {
     private void updateTurnLabel() {
         if (gameState == null)
             return;
-        if (isMyTurn()) {
+        if (isLocalGame) {
+            String turnColor = gameState.getCurrentTurn();
+            String colorName = turnColor.equals("RED") ? "Green" : "Black";
+            statusLabel.setText(colorName + "'s turn");
+            statusLabel.setStyle("-fx-text-fill: #1a1613; -fx-background-color: #81b64c; -fx-background-radius: 4;");
+        } else if (isMyTurn()) {
             String colorName = myColor.equals("RED") ? "Green" : "Black";
             statusLabel.setText("Your turn (" + colorName + ")");
             statusLabel.setStyle("-fx-text-fill: #1a1613; -fx-background-color: #81b64c; -fx-background-radius: 4;");
