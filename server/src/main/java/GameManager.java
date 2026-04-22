@@ -169,6 +169,89 @@ public class GameManager {
     }
 
     /**
+     * Check if a user is currently in an active game session.
+     */
+    private boolean isInGame(String username) {
+        for (GameSession session : activeSessions) {
+            if (session.hasPlayer(username)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Handle when a user sends a match invite to a friend.
+     */
+    public synchronized void handleMatchInvite(ClientHandler sender, String targetUsername) {
+        ClientHandler targetClient = getClientByUsername(targetUsername);
+        if (targetClient == null) {
+            sender.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "offline"));
+            return;
+        }
+
+        if (isInGame(targetUsername)) {
+            sender.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "in_game"));
+            return;
+        }
+
+        // Remove sender from regular matchmaking queue just in case
+        waitingQueue.remove(sender);
+
+        // Forward invite to receiver
+        targetClient.sendMessage(new Message(MessageType.MATCH_INVITE, sender.getUsername()));
+    }
+
+    /**
+     * Handle when sender cancels the match invite.
+     */
+    public synchronized void handleMatchInviteCancel(ClientHandler sender, String targetUsername) {
+        ClientHandler targetClient = getClientByUsername(targetUsername);
+        if (targetClient != null) {
+            targetClient.sendMessage(new Message(MessageType.MATCH_INVITE_CANCEL, sender.getUsername()));
+        }
+    }
+
+    /**
+     * Handle when receiver accepts the match invite.
+     */
+    public synchronized void handleMatchInviteAccept(ClientHandler receiver, String senderUsername) {
+        ClientHandler senderClient = getClientByUsername(senderUsername);
+        if (senderClient == null) {
+            // Sender went offline
+            receiver.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "offline"));
+            return;
+        }
+        
+        if (isInGame(senderUsername)) {
+            // Sender started another game
+            receiver.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "in_game"));
+            return;
+        }
+
+        // Remove both from waiting queue if they are in it
+        waitingQueue.remove(senderClient);
+        waitingQueue.remove(receiver);
+
+        // Notify sender that invite was accepted so they can close their modal
+        senderClient.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "accepted"));
+
+        // Create game session
+        GameSession session = new GameSession(senderClient, receiver, null, this, databaseManager);
+        activeSessions.add(session);
+        session.startGame();
+        System.out.println("Friend PVP game started: " + senderUsername + " vs " + receiver.getUsername());
+    }
+
+    /**
+     * Handle when receiver declines the match invite.
+     */
+    public synchronized void handleMatchInviteDecline(ClientHandler receiver, String senderUsername) {
+        ClientHandler senderClient = getClientByUsername(senderUsername);
+        if (senderClient != null) {
+            senderClient.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "declined"));
+        }
+    }
+
+    /**
      * Find an active ClientHandler by username.
      */
     private ClientHandler getClientByUsername(String username) {

@@ -115,6 +115,15 @@ public class GuiClient extends Application {
                 case ADD_FRIEND:
                     lobbyController.onAddFriendResponse(message);
                     break;
+                case MATCH_INVITE:
+                    lobbyController.onMatchInvite(message);
+                    break;
+                case MATCH_INVITE_CANCEL:
+                    lobbyController.onMatchInviteCancel(message);
+                    break;
+                case MATCH_INVITE_RESPONSE:
+                    lobbyController.onMatchInviteResponse(message);
+                    break;
                 default:
                     break;
             }

@@ -6,6 +6,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
+import javafx.application.Platform;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.BorderPane;
@@ -31,6 +35,9 @@ public class LobbyController {
     private Label winsCountLabel;
     private Label lossesCountLabel;
     private Label drawsCountLabel;
+
+    private Stage currentInviteStage;
+    private boolean isWaitingInvite;
 
     public LobbyController(GuiClient app) {
         this.app = app;
@@ -269,6 +276,8 @@ public class LobbyController {
                                 "-fx-background-color: transparent; -fx-text-fill: #ff2dd0; -fx-border-color: #ff2dd0; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 12; -fx-padding: 4 12; -fx-cursor: hand;");
                         inviteBtn.setOnAction(e -> {
                             System.out.println("Invite clicked for: " + name);
+                            app.send(new Message(MessageType.MATCH_INVITE, name));
+                            showWaitingForFriendModal(name);
                         });
                         row.getChildren().add(inviteBtn);
                     }
@@ -379,6 +388,168 @@ public class LobbyController {
                 }
             }
         }
+    }
+
+    /**
+     * Show modal while waiting for friend to accept
+     */
+    private void showWaitingForFriendModal(String friendName) {
+        Platform.runLater(() -> {
+            if (currentInviteStage != null && currentInviteStage.isShowing()) {
+                currentInviteStage.close();
+            }
+
+            isWaitingInvite = true;
+            showCustomModal(
+                "Inviting Friend",
+                "Waiting for " + friendName + "...",
+                true,
+                "Cancel",
+                null,
+                () -> app.send(new Message(MessageType.MATCH_INVITE_CANCEL, friendName)),
+                null
+            );
+        });
+    }
+
+    /**
+     * Received a match invite from a friend.
+     */
+    public void onMatchInvite(Message message) {
+        String sender = message.getContent();
+        Platform.runLater(() -> {
+            if (currentInviteStage != null && currentInviteStage.isShowing()) {
+                currentInviteStage.close();
+            }
+
+            isWaitingInvite = false;
+            showCustomModal(
+                "Match Invite",
+                sender + " invited you to a match! Accept?",
+                false,
+                "✓ Accept",
+                "✗ Decline",
+                () -> app.send(new Message(MessageType.MATCH_INVITE_ACCEPT, sender)),
+                () -> app.send(new Message(MessageType.MATCH_INVITE_DECLINE, sender))
+            );
+        });
+    }
+
+    /**
+     * Received when sender cancels their invite.
+     */
+    public void onMatchInviteCancel(Message message) {
+        Platform.runLater(() -> {
+            if (currentInviteStage != null && currentInviteStage.isShowing() && !isWaitingInvite) {
+                currentInviteStage.close();
+                currentInviteStage = null;
+            }
+        });
+    }
+
+    /**
+     * Received response for sent invite (in_game, declined, offline, accepted).
+     */
+    public void onMatchInviteResponse(Message message) {
+        String response = message.getContent();
+        Platform.runLater(() -> {
+            if (currentInviteStage != null && currentInviteStage.isShowing() && isWaitingInvite) {
+                currentInviteStage.close();
+                currentInviteStage = null;
+            }
+
+            if ("accepted".equals(response)) {
+                // Game will start, no info modal needed
+                return;
+            }
+
+            String messageText;
+            if ("in_game".equals(response)) {
+                messageText = "Friend is currently in a game.";
+            } else if ("declined".equals(response)) {
+                messageText = "Friend declined the invite.";
+            } else if ("offline".equals(response)) {
+                messageText = "Friend went offline.";
+            } else {
+                messageText = "Invite failed: " + response;
+            }
+
+            showCustomModal(
+                "Invite Response",
+                messageText,
+                false,
+                "OK",
+                null,
+                null,
+                null
+            );
+        });
+    }
+
+    private void showCustomModal(String title, String subtitle, boolean isGoldIcon, String leftBtnText, String rightBtnText, Runnable onLeftClick, Runnable onRightClick) {
+        Stage dialogStage = new Stage();
+        dialogStage.initModality(Modality.APPLICATION_MODAL);
+        
+        // Find main window
+        if (friendsList != null && friendsList.getScene() != null) {
+            dialogStage.initOwner(friendsList.getScene().getWindow());
+        }
+        
+        dialogStage.initStyle(StageStyle.TRANSPARENT);
+
+        VBox dialogRoot = new VBox(20);
+        dialogRoot.setAlignment(Pos.CENTER);
+        dialogRoot.setPadding(new Insets(40, 50, 40, 50));
+        dialogRoot.setStyle("-fx-background-color: #111419; -fx-background-radius: 12; -fx-border-color: rgba(0,240,255,0.3); -fx-border-radius: 12; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,240,255,0.2), 25, 0, 0, 0);");
+
+        // Icon
+        Label iconLabel = new Label(isGoldIcon ? "★" : "⚑");
+        iconLabel.setStyle("-fx-font-size: 48; -fx-text-fill: #FFD166; -fx-background-color: #1a2030; -fx-background-radius: 50; -fx-padding: 20 28 20 28;");
+        iconLabel.setAlignment(Pos.CENTER);
+
+        // Title
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(Font.font("System", FontWeight.BOLD, 26));
+        titleLabel.setTextFill(Color.web("#e6eef6"));
+
+        // Subtitle
+        Label subLabel = new Label(subtitle);
+        subLabel.setFont(Font.font("System", 16));
+        subLabel.setTextFill(Color.web("#9aa6b2"));
+
+        // Buttons
+        HBox buttonBox = new HBox(15);
+        buttonBox.setAlignment(Pos.CENTER);
+
+        if (leftBtnText != null) {
+            Button leftBtn = new Button(leftBtnText);
+            leftBtn.setStyle("-fx-background-color: #00f0ff; -fx-text-fill: #0b0f14; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,240,255,0.3), 10, 0, 0, 0);");
+            leftBtn.setOnAction(e -> {
+                dialogStage.close();
+                if (onLeftClick != null) onLeftClick.run();
+            });
+            buttonBox.getChildren().add(leftBtn);
+        }
+
+        if (rightBtnText != null) {
+            Button rightBtn = new Button(rightBtnText);
+            rightBtn.setStyle("-fx-background-color: #1a1f26; -fx-text-fill: #e6eef6; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-border-color: rgba(255,255,255,0.1); -fx-border-radius: 8; -fx-border-width: 1;");
+            rightBtn.setOnAction(e -> {
+                dialogStage.close();
+                if (onRightClick != null) onRightClick.run();
+            });
+            buttonBox.getChildren().add(rightBtn);
+        }
+
+        dialogRoot.getChildren().addAll(iconLabel, titleLabel, subLabel, buttonBox);
+
+        Scene dialogScene = new Scene(dialogRoot);
+        dialogScene.setFill(Color.TRANSPARENT);
+        dialogStage.setScene(dialogScene);
+        
+        currentInviteStage = dialogStage;
+        dialogStage.showAndWait();
+        currentInviteStage = null;
     }
 
     public void reset() {

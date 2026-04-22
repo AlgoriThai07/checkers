@@ -75,6 +75,18 @@ public class ClientHandler extends Thread {
                     case REMOVE_FRIEND:
                         gameManager.handleRemoveFriend(this, message.getContent());
                         break;
+                    case MATCH_INVITE:
+                        gameManager.handleMatchInvite(this, message.getContent());
+                        break;
+                    case MATCH_INVITE_CANCEL:
+                        gameManager.handleMatchInviteCancel(this, message.getContent());
+                        break;
+                    case MATCH_INVITE_ACCEPT:
+                        gameManager.handleMatchInviteAccept(this, message.getContent());
+                        break;
+                    case MATCH_INVITE_DECLINE:
+                        gameManager.handleMatchInviteDecline(this, message.getContent());
+                        break;
                     default:
                         break;
                 }

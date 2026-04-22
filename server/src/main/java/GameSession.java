@@ -42,6 +42,12 @@ public class GameSession {
         }
     }
 
+    public boolean hasPlayer(String username) {
+        if (redPlayer != null && username.equals(redPlayer.getUsername())) return true;
+        if (blackPlayer != null && username.equals(blackPlayer.getUsername())) return true;
+        return false;
+    }
+
     public void startGame() {
         // Init game
         initializeBoard();
