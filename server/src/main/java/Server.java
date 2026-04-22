@@ -14,10 +14,11 @@ public class Server {
     }
 
     public void start() {
+        // Init a server socket
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Checkers Server started on port " + port);
             System.out.println("Waiting for clients...");
-
+            // Create and start a new client handler everytime accept a new clientSocket
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Client connected: " + clientSocket.getInetAddress());

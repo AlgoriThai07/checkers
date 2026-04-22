@@ -21,7 +21,7 @@ public class GuiServer extends Application {
     public void start(Stage primaryStage) throws Exception {
         listItems = new ListView<>();
 
-        // Redirect System.out to our ListView
+        // Print system out logs to the server UI console
         PrintStream originalOut = System.out;
         System.setOut(new PrintStream(new OutputStream() {
             private StringBuilder buffer = new StringBuilder();
@@ -33,7 +33,7 @@ public class GuiServer extends Application {
                     buffer = new StringBuilder();
                     Platform.runLater(() -> {
                         listItems.getItems().add(line);
-                        // Auto-scroll to bottom
+                        // Auto scroll to bottom
                         listItems.scrollTo(listItems.getItems().size() - 1);
                     });
                     originalOut.println(line);
