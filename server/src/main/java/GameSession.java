@@ -506,6 +506,18 @@ public class GameSession {
 
     public void handleQuit(ClientHandler sender) {
         Message quitMsg = new Message(MessageType.QUIT, "Opponent left the game");
+
+        // Record forfeit result for online PvP games only
+        if (!isAIGame && !isLocalGame) {
+            if (sender == redPlayer && blackPlayer != null) {
+                // Red quit → Black wins
+                databaseManager.recordResult(blackPlayer.getUsername(), redPlayer.getUsername(), false);
+            } else if (sender == blackPlayer) {
+                // Black quit → Red wins
+                databaseManager.recordResult(redPlayer.getUsername(), blackPlayer.getUsername(), false);
+            }
+        }
+
         if (sender == redPlayer && blackPlayer != null) {
             blackPlayer.sendMessage(quitMsg);
             blackPlayer.setCurrentSession(null);
