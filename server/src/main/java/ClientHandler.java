@@ -60,6 +60,33 @@ public class ClientHandler extends Thread {
                     case QUIT:
                         handleQuit();
                         break;
+                    case DRAW_OFFER:
+                        if (currentSession != null) currentSession.forwardDrawOffer(this);
+                        break;
+                    case DRAW_ACCEPT:
+                        if (currentSession != null) currentSession.handleDrawAccept(this);
+                        break;
+                    case DRAW_DECLINE:
+                        if (currentSession != null) currentSession.handleDrawDecline(this);
+                        break;
+                    case ADD_FRIEND:
+                        gameManager.handleAddFriend(this, message.getContent());
+                        break;
+                    case REMOVE_FRIEND:
+                        gameManager.handleRemoveFriend(this, message.getContent());
+                        break;
+                    case MATCH_INVITE:
+                        gameManager.handleMatchInvite(this, message.getContent());
+                        break;
+                    case MATCH_INVITE_CANCEL:
+                        gameManager.handleMatchInviteCancel(this, message.getContent());
+                        break;
+                    case MATCH_INVITE_ACCEPT:
+                        gameManager.handleMatchInviteAccept(this, message.getContent());
+                        break;
+                    case MATCH_INVITE_DECLINE:
+                        gameManager.handleMatchInviteDecline(this, message.getContent());
+                        break;
                     default:
                         break;
                 }
@@ -80,6 +107,7 @@ public class ClientHandler extends Thread {
                 Message response = new Message(MessageType.AUTH_SUCCESS, "Registration successful");
                 response.setSender(username);
                 sendMessage(response);
+                gameManager.addClient(this);
             } else {
                 sendMessage(new Message(MessageType.AUTH_FAIL, "Username already taken"));
             }
@@ -98,6 +126,7 @@ public class ClientHandler extends Thread {
                 Message response = new Message(MessageType.AUTH_SUCCESS, statsPayload);
                 response.setSender(username);
                 sendMessage(response);
+                gameManager.addClient(this);
             } else {
                 sendMessage(new Message(MessageType.AUTH_FAIL, "Invalid credentials"));
             }
@@ -136,6 +165,7 @@ public class ClientHandler extends Thread {
     }
 
     private void handleDisconnect() {
+        gameManager.removeClient(this);
         if (currentSession != null) {
             currentSession.handleQuit(this);
         }

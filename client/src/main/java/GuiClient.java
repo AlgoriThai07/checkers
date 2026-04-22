@@ -100,6 +100,30 @@ public class GuiClient extends Application {
                     gameController.onOpponentQuit(message);
                     switchToScene("lobby");
                     break;
+                case DRAW_OFFER:
+                    gameController.onDrawOffer(message);
+                    break;
+                case DRAW_DECLINE:
+                    gameController.onDrawDecline(message);
+                    break;
+                case STATS_UPDATE:
+                    lobbyController.onStatsUpdate(message);
+                    break;
+                case FRIENDS_LIST_UPDATE:
+                    lobbyController.onFriendsListUpdate(message);
+                    break;
+                case ADD_FRIEND:
+                    lobbyController.onAddFriendResponse(message);
+                    break;
+                case MATCH_INVITE:
+                    lobbyController.onMatchInvite(message);
+                    break;
+                case MATCH_INVITE_CANCEL:
+                    lobbyController.onMatchInviteCancel(message);
+                    break;
+                case MATCH_INVITE_RESPONSE:
+                    lobbyController.onMatchInviteResponse(message);
+                    break;
                 default:
                     break;
             }

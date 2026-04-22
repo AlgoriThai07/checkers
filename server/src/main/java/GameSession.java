@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import model.User;
+
 import model.GameState;
 import model.Message;
 import model.Message.MessageType;
@@ -38,6 +40,12 @@ public class GameSession {
         if (blackPlayer != null) {
             blackPlayer.setCurrentSession(this);
         }
+    }
+
+    public boolean hasPlayer(String username) {
+        if (redPlayer != null && username.equals(redPlayer.getUsername())) return true;
+        if (blackPlayer != null && username.equals(blackPlayer.getUsername())) return true;
+        return false;
     }
 
     public void startGame() {
@@ -272,6 +280,19 @@ public class GameSession {
             } else if (gameState.getStatus().equals("DRAW")) {
                 databaseManager.recordResult(redName, blackName, true);
             }
+            // Send live stats update to both players
+            sendStatsUpdate(redPlayer);
+            sendStatsUpdate(blackPlayer);
+        }
+    }
+
+    private void sendStatsUpdate(ClientHandler player) {
+        if (player == null) return;
+        User stats = databaseManager.getStats(player.getUsername());
+        if (stats != null) {
+            String payload = stats.getWins() + ":" + stats.getLosses() + ":" + stats.getDraws();
+            Message statsMsg = new Message(MessageType.STATS_UPDATE, payload);
+            player.sendMessage(statsMsg);
         }
     }
 
@@ -457,6 +478,36 @@ public class GameSession {
     }
 
     // ========================================
+    // DRAW OFFER / ACCEPT / DECLINE
+    // ========================================
+
+    public void forwardDrawOffer(ClientHandler sender) {
+        Message drawOffer = new Message(MessageType.DRAW_OFFER, sender.getUsername() + " offers a draw");
+        if (sender == redPlayer && blackPlayer != null) {
+            blackPlayer.sendMessage(drawOffer);
+        } else if (sender == blackPlayer) {
+            redPlayer.sendMessage(drawOffer);
+        }
+    }
+
+    public void handleDrawAccept(ClientHandler sender) {
+        // Set game status to DRAW and broadcast game over to both players
+        gameState.setStatus("DRAW");
+        broadcastGameOver();
+        gameManager.removeSession(this);
+    }
+
+    public void handleDrawDecline(ClientHandler sender) {
+        // Notify the original offerer that the draw was declined
+        Message decline = new Message(MessageType.DRAW_DECLINE, "Draw offer declined");
+        if (sender == redPlayer && blackPlayer != null) {
+            blackPlayer.sendMessage(decline);
+        } else if (sender == blackPlayer) {
+            redPlayer.sendMessage(decline);
+        }
+    }
+
+    // ========================================
     // PLAY AGAIN / QUIT
     // ========================================
 
@@ -476,6 +527,22 @@ public class GameSession {
 
     public void handleQuit(ClientHandler sender) {
         Message quitMsg = new Message(MessageType.QUIT, "Opponent left the game");
+
+        // Record forfeit result for online PvP games only
+        if (!isAIGame && !isLocalGame) {
+            if (sender == redPlayer && blackPlayer != null) {
+                // Red quit → Black wins
+                databaseManager.recordResult(blackPlayer.getUsername(), redPlayer.getUsername(), false);
+                sendStatsUpdate(redPlayer);
+                sendStatsUpdate(blackPlayer);
+            } else if (sender == blackPlayer) {
+                // Black quit → Red wins
+                databaseManager.recordResult(redPlayer.getUsername(), blackPlayer.getUsername(), false);
+                sendStatsUpdate(redPlayer);
+                sendStatsUpdate(blackPlayer);
+            }
+        }
+
         if (sender == redPlayer && blackPlayer != null) {
             blackPlayer.sendMessage(quitMsg);
             blackPlayer.setCurrentSession(null);

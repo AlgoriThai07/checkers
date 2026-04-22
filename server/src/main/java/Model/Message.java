@@ -18,7 +18,19 @@ public class Message implements Serializable {
         GAME_OVER,
         CHAT,
         PLAY_AGAIN,
-        QUIT
+        QUIT,
+        DRAW_OFFER,
+        DRAW_ACCEPT,
+        DRAW_DECLINE,
+        STATS_UPDATE,
+        ADD_FRIEND,
+        REMOVE_FRIEND,
+        FRIENDS_LIST_UPDATE,
+        MATCH_INVITE,
+        MATCH_INVITE_CANCEL,
+        MATCH_INVITE_ACCEPT,
+        MATCH_INVITE_DECLINE,
+        MATCH_INVITE_RESPONSE
     }
 
     private MessageType type;
