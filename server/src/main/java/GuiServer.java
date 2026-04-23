@@ -66,7 +66,7 @@ public class GuiServer extends Application {
         pane.setStyle("-fx-background-color: #2b2b2b;");
 
         listItems.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 13; " +
-                           "-fx-control-inner-background: #1e1e1e; -fx-text-fill: #00ff00;");
+                           "-fx-control-inner-background: #1e1e1e; -fx-text-fill: #33f3ff;");
         pane.setCenter(listItems);
 
         return new Scene(pane, 600, 450);

@@ -14,6 +14,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
+import model.Message;
 
 public class MatchmakingController {
 
@@ -112,15 +113,11 @@ public class MatchmakingController {
         VBox playersInfoBox = new VBox(8);
         playersInfoBox.setAlignment(Pos.CENTER);
 
-        Label playersCountLabel = new Label("Players searching: 12");
-        playersCountLabel.setFont(Font.font("System", 13));
-        playersCountLabel.getStyleClass().add("secondary-text");
-
         Label estimatedTimeLabel = new Label("Estimated wait: < 1 min");
         estimatedTimeLabel.setFont(Font.font("System", 13));
         estimatedTimeLabel.getStyleClass().add("secondary-text");
 
-        playersInfoBox.getChildren().addAll(playersCountLabel, estimatedTimeLabel);
+        playersInfoBox.getChildren().addAll(estimatedTimeLabel);
 
         // Cancel button
         Button cancelButton = new Button("CANCEL SEARCH");
@@ -174,13 +171,14 @@ public class MatchmakingController {
         if (queueDelay != null) queueDelay.stop();
         
         queueDelay = new Timeline(new KeyFrame(Duration.seconds(2.0), e -> {
-            app.send(new model.Message(model.Message.MessageType.QUEUE, mode)); // sending network queue request cleanly
+            app.send(new Message(Message.MessageType.QUEUE, mode)); // sending network queue request cleanly
         }));
         queueDelay.play();
     }
 
     private void handleCancel() {
         stopTimer();
+        app.send(new Message(Message.MessageType.LEAVE_QUEUE, ""));
         System.out.println("Matchmaking cancelled - Returning to lobby");
         app.switchToScene("lobby");
     }

@@ -78,6 +78,7 @@ public class GameState implements Serializable {
         this.historyCount = historyCount;
     }
 
+    // Make a deep copy of the game state
     public GameState deepCopy() {
         GameState copy = new GameState();
         copy.setCurrentTurn(this.currentTurn);

@@ -328,15 +328,6 @@ public class LobbyController {
     }
 
     private void handleCreateGame() {
-        // System.out.println("Play Online vs Friend clicked");
-        // // Focus the friends list so the user can pick someone to invite
-        // if (friendsList != null) {
-        //     friendsList.requestFocus();
-        // }
-        // if (friendStatusLabel != null) {
-        //     friendStatusLabel.setText("Select a friend and click 'Invite' to play!");
-        //     friendStatusLabel.setStyle("-fx-text-fill: #00f0ff;");
-        // }
         System.out.println("Play Online vs Friend clicked - Starting PVP Matchmaking");
         app.send(new Message(MessageType.QUEUE, "PVP"));
         app.switchToScene("matchmaking");
