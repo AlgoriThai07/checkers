@@ -30,7 +30,8 @@ public class Message implements Serializable {
         MATCH_INVITE_CANCEL,
         MATCH_INVITE_ACCEPT,
         MATCH_INVITE_DECLINE,
-        MATCH_INVITE_RESPONSE
+        MATCH_INVITE_RESPONSE,
+        UNDO
     }
 
     private MessageType type;

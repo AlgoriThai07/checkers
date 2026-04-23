@@ -87,6 +87,9 @@ public class ClientHandler extends Thread {
                     case MATCH_INVITE_DECLINE:
                         gameManager.handleMatchInviteDecline(this, message.getContent());
                         break;
+                    case UNDO:
+                        if (currentSession != null) currentSession.handleUndo(this);
+                        break;
                     default:
                         break;
                 }

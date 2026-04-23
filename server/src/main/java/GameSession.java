@@ -22,6 +22,8 @@ public class GameSession {
     private boolean isLocalGame;
     private boolean redWantsPlayAgain = false;
     private boolean blackWantsPlayAgain = false;
+    private List<GameState> history = new ArrayList<>();
+    private boolean isFirstMoveOfTurn = true;
 
     public GameSession(ClientHandler redPlayer, ClientHandler blackPlayer, AIPlayer aiPlayer,
             GameManager gameManager, DatabaseManager databaseManager) {
@@ -76,6 +78,9 @@ public class GameSession {
 
         redWantsPlayAgain = false;
         blackWantsPlayAgain = false;
+        history.clear();
+        gameState.setHistoryCount(0);
+        isFirstMoveOfTurn = true;
     }
 
     private void initializeBoard() {
@@ -129,6 +134,13 @@ public class GameSession {
             sender.sendMessage(new Message(MessageType.INVALID_MOVE, "Invalid move"));
             return;
         }
+
+        if (isFirstMoveOfTurn) {
+            history.add(gameState.deepCopy());
+            gameState.setHistoryCount(history.size());
+            isFirstMoveOfTurn = false;
+        }
+
         // Apply the move to the board
         applyMove(fullMove);
         // Check if the game is over
@@ -159,6 +171,7 @@ public class GameSession {
         String nextTurn = gameState.getCurrentTurn().equals("RED") ? "BLACK" : "RED";
         gameState.setCurrentTurn(nextTurn);
         gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), nextTurn));
+        isFirstMoveOfTurn = true;
 
         // If the next player has no valid moves, they lose
         if (gameState.getValidMoves().isEmpty()) {
@@ -190,7 +203,7 @@ public class GameSession {
 
             synchronized (GameSession.this) {
                 // Ensure game is still in progress before AI makes a move
-                if (!gameState.getStatus().equals("IN_PROGRESS"))
+                if (!gameState.getStatus().equals("IN_PROGRESS") || !gameState.getCurrentTurn().equals("BLACK"))
                     return;
 
                 // Get AI move
@@ -201,6 +214,13 @@ public class GameSession {
                     if (fullAiMove == null) {
                         fullAiMove = aiMove;
                     }
+
+                    if (isFirstMoveOfTurn) {
+                        history.add(gameState.deepCopy());
+                        gameState.setHistoryCount(history.size());
+                        isFirstMoveOfTurn = false;
+                    }
+
                     // Apply AI move
                     applyMove(fullAiMove);
                     // Check if the game is over
@@ -209,6 +229,7 @@ public class GameSession {
                     if (gameState.getStatus().equals("IN_PROGRESS")) {
                         gameState.setCurrentTurn("RED");
                         gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), "RED"));
+                        isFirstMoveOfTurn = true;
                         // If human has no valid moves, AI wins
                         if (gameState.getValidMoves().isEmpty()) {
                             gameState.setStatus("BLACK_WIN");
@@ -539,6 +560,23 @@ public class GameSession {
         if (redPlayer != null)
             redPlayer.setCurrentSession(null);
         gameManager.removeSession(this);
+    }
+
+    public synchronized void handleUndo(ClientHandler sender) {
+        if (isAIGame) {
+            if (history.size() < 2) return;
+            history.remove(history.size() - 1);
+            GameState previousState = history.remove(history.size() - 1);
+            this.gameState = previousState;
+            this.isFirstMoveOfTurn = true;
+            broadcastGameUpdate();
+        } else if (isLocalGame) {
+            if (history.isEmpty()) return;
+            GameState previousState = history.remove(history.size() - 1);
+            this.gameState = previousState;
+            this.isFirstMoveOfTurn = true;
+            broadcastGameUpdate();
+        }
     }
 
     private String getPlayerColor(ClientHandler handler) {
