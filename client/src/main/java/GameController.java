@@ -59,6 +59,7 @@ public class GameController {
     // UI Tracking
     private ListView<String> chatList;
     private TextField chatInput;
+    private Button undoButton;
 
     private Label statusLabel;
     private Label p1NameLabel;
@@ -570,6 +571,23 @@ public class GameController {
         app.switchToScene("lobby");
     }
 
+    private void handleUndo() {
+        if (undoButton != null) {
+            undoButton.setDisable(true);
+        }
+        app.send(new Message(MessageType.UNDO));
+    }
+
+    private void updateUndoButton() {
+        if (undoButton == null || gameState == null) return;
+        boolean isAIGame = gameState.getBlackPlayer().equals("AI") || gameState.getRedPlayer().equals("AI");
+        if (isLocalGame) {
+            undoButton.setDisable(gameState.getHistoryCount() < 1);
+        } else if (isAIGame) {
+            undoButton.setDisable(!isMyTurn() || gameState.getHistoryCount() < 2);
+        }
+    }
+
     // ========================================
     // MESSAGE HANDLERS (called from GuiClient)
     // ========================================
@@ -597,6 +615,7 @@ public class GameController {
 
         updateTurnLabel();
         updateControlButtons();
+        updateUndoButton();
         renderBoard(gameState);
 
         chatList.getItems().clear();
@@ -612,6 +631,18 @@ public class GameController {
         offerDrawButton.getStyleClass().add("secondary-button");
         offerDrawButton.setStyle(offerDrawButton.getStyle() + "-fx-font-size: 16px; -fx-font-weight: bold;");
         offerDrawButton.setOnAction(e -> handleOfferDraw());
+
+        boolean isAIGame = gameState != null && (gameState.getBlackPlayer().equals("AI") || gameState.getRedPlayer().equals("AI"));
+        
+        if (isLocalGame || isAIGame) {
+            undoButton = new Button("Undo");
+            undoButton.setPrefHeight(60);
+            undoButton.setMaxWidth(Double.MAX_VALUE);
+            undoButton.getStyleClass().add("secondary-button");
+            undoButton.setStyle(undoButton.getStyle() + "-fx-font-size: 16px; -fx-font-weight: bold;");
+            undoButton.setOnAction(e -> handleUndo());
+            controlsBox.getChildren().add(undoButton);
+        }
 
         if (isLocalGame) {
             // Local mode: Draw + Quit only
@@ -639,6 +670,7 @@ public class GameController {
     public void onGameUpdate(Message message) {
         gameState = message.getGameState();
         updateTurnLabel();
+        updateUndoButton();
         renderBoard(gameState);
     }
 
