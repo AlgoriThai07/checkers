@@ -57,9 +57,6 @@ public class ClientHandler extends Thread {
                     case CHAT:
                         handleChat(message);
                         break;
-                    case PLAY_AGAIN:
-                        handlePlayAgain();
-                        break;
                     case QUIT:
                         handleQuit();
                         break;
@@ -178,13 +175,6 @@ public class ClientHandler extends Thread {
         if (currentSession != null) {
             message.setSender(username);
             currentSession.forwardChat(this, message);
-        }
-    }
-
-    private void handlePlayAgain() {
-        // Forward the play again request to the current game session
-        if (currentSession != null) {
-            currentSession.handlePlayAgain(this);
         }
     }
 
