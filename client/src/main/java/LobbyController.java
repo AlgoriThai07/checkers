@@ -558,7 +558,8 @@ public class LobbyController {
         dialogStage.setScene(dialogScene);
         
         currentInviteStage = dialogStage;
-        dialogStage.showAndWait(); // Wait for the modal to be closed
+        // Wait for the modal to be closed
+        dialogStage.showAndWait(); 
         currentInviteStage = null;
     }
 
