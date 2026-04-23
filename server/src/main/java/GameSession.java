@@ -166,34 +166,48 @@ public class GameSession {
     }
 
     private void handleAIMove() {
-        // Get AI move
-        Move aiMove = aiPlayer.getMove(gameState);
-        if (aiMove != null) {
-            // Find matching valid move for proper captured list
-            Move fullAiMove = findMatchingValidMove(aiMove);
-            if (fullAiMove == null) {
-               fullAiMove = aiMove;
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000); // 1 second delay
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
             }
-            // Apply AI move
-            applyMove(fullAiMove);
-            // Check if the game is over
-            checkGameOver();
-            // If the game is not over, switch turns and broadcast
-            if (gameState.getStatus().equals("IN_PROGRESS")) {
-                gameState.setCurrentTurn("RED");
-                gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), "RED"));
-                // If human has no valid moves, AI wins
-                if (gameState.getValidMoves().isEmpty()) {
-                    gameState.setStatus("BLACK_WIN");
-                    broadcastGameOver();
-                } else {
-                    broadcastGameUpdate();
+
+            synchronized (GameSession.this) {
+                // Ensure game is still in progress before AI makes a move
+                if (!gameState.getStatus().equals("IN_PROGRESS")) return;
+
+                // Get AI move
+                Move aiMove = aiPlayer.getMove(gameState);
+                if (aiMove != null) {
+                    // Find matching valid move for proper captured list
+                    Move fullAiMove = findMatchingValidMove(aiMove);
+                    if (fullAiMove == null) {
+                       fullAiMove = aiMove;
+                    }
+                    // Apply AI move
+                    applyMove(fullAiMove);
+                    // Check if the game is over
+                    checkGameOver();
+                    // If the game is not over, switch turns and broadcast
+                    if (gameState.getStatus().equals("IN_PROGRESS")) {
+                        gameState.setCurrentTurn("RED");
+                        gameState.setValidMoves(calculateValidMoves(gameState.getBoard(), "RED"));
+                        // If human has no valid moves, AI wins
+                        if (gameState.getValidMoves().isEmpty()) {
+                            gameState.setStatus("BLACK_WIN");
+                            broadcastGameOver();
+                        } else {
+                            broadcastGameUpdate();
+                        }
+                    } else {
+                        // Broadcast game over
+                        broadcastGameOver();
+                    }
                 }
-            } else {
-                // Broadcast game over
-                broadcastGameOver();
             }
-        }
+        }).start();
     }
     // Find matching valid move from list of valid moves
     private Move findMatchingValidMove(Move move) {
