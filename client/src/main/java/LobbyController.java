@@ -23,11 +23,12 @@ import javafx.scene.text.FontWeight;
 import model.Message;
 import model.Message.MessageType;
 
+// Lobby screen: show stats, game buttons, friends list, and invite buttons
 public class LobbyController {
 
     private GuiClient app;
 
-    private String username = "Player";
+    private String username = "Player"; // default
     private ListView<String> friendsList;
     private Label welcomeLabel;
     private Label friendStatusLabel;
@@ -36,6 +37,7 @@ public class LobbyController {
     private Label lossesCountLabel;
     private Label drawsCountLabel;
 
+    // Invite popup stage
     private Stage currentInviteStage;
     private boolean isWaitingInvite;
 
@@ -47,16 +49,15 @@ public class LobbyController {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("root");
 
-        // Top bar
+        // Top bar with title and logout button
         HBox topBar = createTopBar();
         root.setTop(topBar);
 
-        // Use HBox so both panels share space proportionally
+        // Split main area into 2 areas
         HBox mainContent = new HBox();
         VBox leftContent = createLeftContent();
         VBox friendsPanel = createFriendsPanel();
 
-        // Left takes 45%, right takes 55%
         HBox.setHgrow(leftContent, Priority.ALWAYS);
         HBox.setHgrow(friendsPanel, Priority.ALWAYS);
 
@@ -99,6 +100,7 @@ public class LobbyController {
         return topBar;
     }
 
+    // Create a stat circle with a letter, label, count, and color
     private VBox createStatCircle(String letter, String label, String count, String colorHex) {
         VBox statBox = new VBox(6);
         statBox.setAlignment(Pos.CENTER);
@@ -128,6 +130,7 @@ public class LobbyController {
         return statBox;
     }
 
+    // Left content: welcome message, stats circles, and game buttons
     private VBox createLeftContent() {
         VBox leftContent = new VBox(25);
         leftContent.setPadding(new Insets(40, 50, 40, 50));
@@ -162,7 +165,7 @@ public class LobbyController {
 
         statsRow.getChildren().addAll(winsBox, drawsBox, lossesBox);
 
-        // Game buttons - VERTICAL
+        // Game mode buttons vertically
         VBox buttonsBox = new VBox(15);
         buttonsBox.setAlignment(Pos.CENTER);
         buttonsBox.setPadding(new Insets(10, 0, 0, 0));
@@ -194,6 +197,7 @@ public class LobbyController {
         return leftContent;
     }
 
+    // Right area: friends list, add friend, and status label
     private VBox createFriendsPanel() {
         VBox friendsPanel = new VBox(12);
         friendsPanel.setPadding(new Insets(25));
@@ -229,7 +233,7 @@ public class LobbyController {
 
         addFriendRow.getChildren().addAll(addFriendField, addFriendBtn);
 
-        // Status label
+        // Status label for friend requests
         friendStatusLabel = new Label();
         friendStatusLabel.setFont(Font.font("System", 12));
         friendStatusLabel.setStyle("-fx-text-fill: #9aa6b2;");
@@ -239,7 +243,7 @@ public class LobbyController {
                 "-fx-background-color: #0b0f14; -fx-control-inner-background: #0b0f14; -fx-border-color: rgba(255,255,255,0.1); -fx-border-radius: 6; -fx-background-radius: 6;");
         VBox.setVgrow(friendsList, Priority.ALWAYS);
 
-        // Cell factory
+        // The friends list layout
         friendsList.setCellFactory(param -> new ListCell<String>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -257,7 +261,7 @@ public class LobbyController {
                     row.setAlignment(Pos.CENTER_LEFT);
                     row.setPadding(new Insets(12, 16, 12, 16));
 
-                    // Avatar
+                    // Colored circle with first letter of name
                     StackPane avatarPane = new StackPane();
                     Circle avatar = new Circle(24);
                     avatar.setFill(Color.web("#1a3a4a"));
@@ -296,7 +300,7 @@ public class LobbyController {
                         row.getChildren().add(inviteBtn);
                     }
 
-                    // Remove friend button
+                    // Remove friend button ("x")
                     Button removeBtn = new Button("\u2715");
                     removeBtn.setStyle(
                             "-fx-background-color: transparent; -fx-text-fill: #e74c3c; -fx-border-color: #e74c3c; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 14; -fx-padding: 6 10; -fx-cursor: hand;");
@@ -317,20 +321,23 @@ public class LobbyController {
         return friendsPanel;
     }
 
+    // Handle quick play button
     private void handleQuickPlay() {
         System.out.println("Quick Play clicked - Starting game vs AI");
         app.send(new Message(MessageType.QUEUE, "AI"));
     }
 
+    // Handle play with friend button
     private void handlePlayWithFriend() {
         System.out.println("Play Local with Friend clicked - Starting local hot-seat game");
         app.send(new Message(MessageType.QUEUE, "LOCAL"));
     }
 
+    // Handle create game button
     private void handleCreateGame() {
         System.out.println("Play Online vs Friend clicked - Starting PVP Matchmaking");
         app.send(new Message(MessageType.QUEUE, "PVP"));
-        app.switchToScene("matchmaking");
+        app.switchToScene("matchmaking"); // Search for an opponent
     }
 
     private void handleLogout() {
@@ -338,6 +345,7 @@ public class LobbyController {
         app.switchToScene("login");
     }
 
+    // Handle authentication success
     public void onAuthSuccess(Message message) {
         this.username = app.getUsername();
         if (welcomeLabel != null) {
@@ -355,6 +363,7 @@ public class LobbyController {
         }
     }
 
+    // Update stats after a game
     public void onStatsUpdate(Message message) {
         if (message.getContent() != null) {
             String[] parts = message.getContent().split(":");
@@ -366,10 +375,7 @@ public class LobbyController {
         }
     }
 
-    /**
-     * Called when the server sends a FRIENDS_LIST_UPDATE.
-     * Content format: "friend1:online,friend2:offline,..."
-     */
+    // Update friends list
     public void onFriendsListUpdate(Message message) {
         friendsList.getItems().clear();
         if (message.getContent() != null && !message.getContent().isEmpty()) {
@@ -380,10 +386,7 @@ public class LobbyController {
         }
     }
 
-    /**
-     * Called when the server responds to an ADD_FRIEND request.
-     * Content format: "SUCCESS:username" or "ERROR:message"
-     */
+    // Update friend status label (online, offline, added)
     public void onAddFriendResponse(Message message) {
         if (message.getContent() != null) {
             if (message.getContent().startsWith("ERROR:")) {
@@ -402,9 +405,7 @@ public class LobbyController {
         }
     }
 
-    /**
-     * Show modal while waiting for friend to accept
-     */
+    // Show modal while waiting for friend to accept
     private void showWaitingForFriendModal(String friendName) {
         Platform.runLater(() -> {
             if (currentInviteStage != null && currentInviteStage.isShowing()) {
@@ -424,9 +425,7 @@ public class LobbyController {
         });
     }
 
-    /**
-     * Received a match invite from a friend.
-     */
+    // Received a match invite from a friend logic
     public void onMatchInvite(Message message) {
         String sender = message.getContent();
         Platform.runLater(() -> {
@@ -447,9 +446,7 @@ public class LobbyController {
         });
     }
 
-    /**
-     * Received when sender cancels their invite.
-     */
+    // Handle match invite cancel
     public void onMatchInviteCancel(Message message) {
         Platform.runLater(() -> {
             if (currentInviteStage != null && currentInviteStage.isShowing() && !isWaitingInvite) {
@@ -459,19 +456,18 @@ public class LobbyController {
         });
     }
 
-    /**
-     * Received response for sent invite (in_game, declined, offline, accepted).
-     */
+    // Handle match invite response
     public void onMatchInviteResponse(Message message) {
         String response = message.getContent();
         Platform.runLater(() -> {
+            // Close the invite modal if it is showing
             if (currentInviteStage != null && currentInviteStage.isShowing() && isWaitingInvite) {
                 currentInviteStage.close();
                 currentInviteStage = null;
             }
 
             if ("accepted".equals(response)) {
-                // Game will start, no info modal needed
+                // Game is about to start, no info modal needed
                 return;
             }
 
@@ -498,11 +494,12 @@ public class LobbyController {
         });
     }
 
+    // Show a custom modal with a title, subtitle, buttons, and icons
     private void showCustomModal(String title, String subtitle, boolean isGoldIcon, String leftBtnText, String rightBtnText, Runnable onLeftClick, Runnable onRightClick) {
         Stage dialogStage = new Stage();
         dialogStage.initModality(Modality.APPLICATION_MODAL);
         
-        // Find main window
+        // Initialize the modal to the friends list window
         if (friendsList != null && friendsList.getScene() != null) {
             dialogStage.initOwner(friendsList.getScene().getWindow());
         }
@@ -533,6 +530,7 @@ public class LobbyController {
         HBox buttonBox = new HBox(15);
         buttonBox.setAlignment(Pos.CENTER);
 
+        // Left button
         if (leftBtnText != null) {
             Button leftBtn = new Button(leftBtnText);
             leftBtn.setStyle("-fx-background-color: #00f0ff; -fx-text-fill: #0b0f14; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,240,255,0.3), 10, 0, 0, 0);");
@@ -542,7 +540,7 @@ public class LobbyController {
             });
             buttonBox.getChildren().add(leftBtn);
         }
-
+        // Right button
         if (rightBtnText != null) {
             Button rightBtn = new Button(rightBtnText);
             rightBtn.setStyle("-fx-background-color: #1a1f26; -fx-text-fill: #e6eef6; -fx-font-weight: bold; -fx-font-size: 15; -fx-padding: 10 20; -fx-background-radius: 8; -fx-cursor: hand; -fx-border-color: rgba(255,255,255,0.1); -fx-border-radius: 8; -fx-border-width: 1;");
@@ -560,12 +558,12 @@ public class LobbyController {
         dialogStage.setScene(dialogScene);
         
         currentInviteStage = dialogStage;
-        dialogStage.showAndWait();
+        dialogStage.showAndWait(); // Wait for the modal to be closed
         currentInviteStage = null;
     }
 
+    // Reset the friend status label
     public void reset() {
-        // Clear feedback label on re-entry
         if (friendStatusLabel != null) {
             friendStatusLabel.setText("");
         }

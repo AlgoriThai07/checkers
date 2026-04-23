@@ -16,6 +16,7 @@ public class SignUpController {
 
     private GuiClient app;
 
+    // Fields for the signup form
     private TextField usernameField;
     private PasswordField passwordField;
     private PasswordField confirmPasswordField;
@@ -26,6 +27,7 @@ public class SignUpController {
         this.app = app;
     }
 
+    // Create the signup scene
     public Scene createScene() {
         VBox root = new VBox(30);
         root.setAlignment(Pos.CENTER);
@@ -104,12 +106,12 @@ public class SignUpController {
         signUpButton.getStyleClass().add("primary-button");
         signUpButton.setOnAction(e -> handleSignUp());
 
-        // Make Enter key trigger sign up
+        // Handle sign up when enter key is pressed
         confirmPasswordField.setOnAction(e -> handleSignUp());
 
         formBox.getChildren().addAll(usernameBox, passwordBox, confirmPasswordBox, errorLabel, signUpButton);
 
-        // Login link
+        // Login link to the login scene
         HBox loginBox = new HBox(5);
         loginBox.setAlignment(Pos.CENTER);
 
@@ -121,6 +123,7 @@ public class SignUpController {
         loginLink.getStyleClass().add("link-button");
         loginLink.setOnAction(e -> handleLogin());
 
+        // Add the login link to the login box
         loginBox.getChildren().addAll(loginPrompt, loginLink);
 
         root.getChildren().addAll(titleBox, formBox, loginBox);
@@ -135,7 +138,9 @@ public class SignUpController {
         return scene;
     }
 
+    // Handle sign up when the sign up button is clicked
     private void handleSignUp() {
+        // Get the username, password, and confirm password from the form
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
         String confirmPassword = confirmPasswordField.getText();
@@ -165,11 +170,13 @@ public class SignUpController {
             return;
         }
 
+        // Log the sign up attempt
         System.out.println("Sign up attempt - Username: " + username);
         app.setUsername(username);
         Message msg = new Message(MessageType.REGISTER, username + ":" + password);
         app.send(msg);
 
+        // Disable the sign up button and show registering...
         signUpButton.setDisable(true);
         signUpButton.setText("REGISTERING...");
     }
@@ -178,6 +185,7 @@ public class SignUpController {
         app.switchToScene("login");
     }
 
+    // Show an error message
     public void showError(String message) {
         errorLabel.setText(message);
         errorLabel.setVisible(true);

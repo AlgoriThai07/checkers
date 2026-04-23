@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 
 public class Client extends Thread{
 
-
+	// Connect to server
 	Socket socketClient;
 
 	ObjectOutputStream out;
@@ -20,7 +20,6 @@ public class Client extends Thread{
 	private Consumer<Serializable> callback;
 
 	Client(Consumer<Serializable> call){
-
 		callback = call;
 	}
 
@@ -35,7 +34,7 @@ public class Client extends Thread{
 		catch(Exception e) {
 			System.err.println("Client connection error: " + e.getMessage());
 			callback.accept("Error: Could not connect to server. Make sure the server is running.");
-			return; // Stop the thread if we can't connect
+			return; // Stop the thread if can not connect
 		}
 
 		while(true) {
@@ -51,7 +50,8 @@ public class Client extends Thread{
 		}
 
 	}
-
+ 
+	// Send message to server
 	public void send(Message message) {
 		if (out == null) {
 			System.err.println("Cannot send message: Not connected to server.");

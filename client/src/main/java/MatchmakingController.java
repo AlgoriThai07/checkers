@@ -18,6 +18,7 @@ import model.Message;
 
 public class MatchmakingController {
 
+    // Fields for the matchmaking screen
     private GuiClient app;
     private String username = "Player";
     private Label statusLabel;
@@ -30,6 +31,7 @@ public class MatchmakingController {
         this.app = app;
     }
 
+    // Create the matchmaking scene
     public Scene createScene() {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("root");
@@ -52,6 +54,7 @@ public class MatchmakingController {
         return scene;
     }
 
+    // Create the top bar with title and username
     private HBox createTopBar() {
         HBox topBar = new HBox(20);
         topBar.setPadding(new Insets(20, 30, 20, 30));
@@ -77,6 +80,7 @@ public class MatchmakingController {
         return topBar;
     }
 
+    // Create the center content with the matchmaking container
     private VBox createCenterContent() {
         VBox centerContent = new VBox(30);
         centerContent.setPadding(new Insets(60, 40, 40, 40));
@@ -126,6 +130,7 @@ public class MatchmakingController {
         cancelButton.getStyleClass().add("secondary-button");
         cancelButton.setOnAction(e -> handleCancel());
 
+        // Add the status label, progress indicator, info label, players info box, and cancel button to the matchmaking box
         matchmakingBox.getChildren().addAll(
             statusLabel,
             progressIndicator,
@@ -139,13 +144,16 @@ public class MatchmakingController {
         return centerContent;
     }
 
+    // Timeline for queue delay
     private Timeline queueDelay;
 
+    // Start the timer
     public void startTimer() {
         elapsedSeconds = 0;
         if (timerLabel != null) timerLabel.setText("0:00");
         if (timer != null) timer.stop();
         
+        // Create a new timeline for the timer
         timer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             elapsedSeconds++;
             int minutes = elapsedSeconds / 60;
@@ -154,10 +162,13 @@ public class MatchmakingController {
                 timerLabel.setText(String.format("%d:%02d", minutes, seconds));
             }
         }));
+        // Set the timer to run indefinitely
         timer.setCycleCount(Timeline.INDEFINITE);
+        // Start the timer
         timer.play();
     }
 
+    // Stop the timer
     public void stopTimer() {
         if (timer != null) {
             timer.stop();
@@ -167,6 +178,7 @@ public class MatchmakingController {
         }
     }
 
+    // Queue for a match
     public void queueForMatch(String mode) {
         if (queueDelay != null) queueDelay.stop();
         
@@ -176,6 +188,7 @@ public class MatchmakingController {
         queueDelay.play();
     }
 
+    // Handle cancel button
     private void handleCancel() {
         stopTimer();
         app.send(new Message(Message.MessageType.LEAVE_QUEUE, ""));
@@ -183,6 +196,7 @@ public class MatchmakingController {
         app.switchToScene("lobby");
     }
 
+    // Set the username
     public void setUsername(String username) {
         this.username = username;
         if (usernameLabel != null) usernameLabel.setText(username);

@@ -340,7 +340,8 @@ public class GameSession {
 
     // Send stats update to the player
     private void sendStatsUpdate(ClientHandler player) {
-        if (player == null) return;
+        if (player == null)
+            return;
         User stats = databaseManager.getStats(player.getUsername());
         if (stats != null) {
             // Format: wins:losses:draws
@@ -350,7 +351,6 @@ public class GameSession {
         }
     }
 
-    
     // Calculate all valid moves for a color
     public static List<Move> calculateValidMoves(PieceType[][] board, String color) {
         List<Move> jumps = new ArrayList<>();
@@ -415,7 +415,7 @@ public class GameSession {
         }
         // Red moves toward increasing rows
         if (piece == PieceType.RED) {
-            return new int[] { 1 }; 
+            return new int[] { 1 };
         }
         // Black moves toward decreasing rows
         return new int[] { -1 };
@@ -541,33 +541,37 @@ public class GameSession {
     }
 
     public void handleQuit(ClientHandler sender) {
-        // Send quit message to the other player
-        Message quitMsg = new Message(MessageType.QUIT, "Opponent left the game");
+        // If the game is already over, just return to lobby
+        boolean gameAlreadyOver = !"IN_PROGRESS".equals(gameState.getStatus());
 
-        // Record forfeit result for online PvP games only
-        if (!isAIGame && !isLocalGame) {
+        if (!gameAlreadyOver) {
+            Message quitMsg = new Message(MessageType.QUIT, "Opponent left the game");
+
+            // Record forfeit result for online PvP games only
+            if (!isAIGame && !isLocalGame) {
+                if (sender == redPlayer && blackPlayer != null) {
+                    // Red quit then Black wins
+                    databaseManager.recordResult(blackPlayer.getUsername(), redPlayer.getUsername(), false);
+                    sendStatsUpdate(redPlayer);
+                    sendStatsUpdate(blackPlayer);
+                } else if (sender == blackPlayer) {
+                    // Black quit then Red wins
+                    databaseManager.recordResult(redPlayer.getUsername(), blackPlayer.getUsername(), false);
+                    sendStatsUpdate(redPlayer);
+                    sendStatsUpdate(blackPlayer);
+                }
+            }
+            // Notify the opponent that this player resigned
             if (sender == redPlayer && blackPlayer != null) {
-                // Red quit → Black wins
-                databaseManager.recordResult(blackPlayer.getUsername(), redPlayer.getUsername(), false);
-                sendStatsUpdate(redPlayer);
-                sendStatsUpdate(blackPlayer);
+                blackPlayer.sendMessage(quitMsg);
+                blackPlayer.setCurrentSession(null);
             } else if (sender == blackPlayer) {
-                // Black quit → Red wins
-                databaseManager.recordResult(redPlayer.getUsername(), blackPlayer.getUsername(), false);
-                sendStatsUpdate(redPlayer);
-                sendStatsUpdate(blackPlayer);
+                redPlayer.sendMessage(quitMsg);
+                redPlayer.setCurrentSession(null);
             }
         }
-        // If in PvP game and red player quits
-        if (sender == redPlayer && blackPlayer != null) {
-            blackPlayer.sendMessage(quitMsg);
-            blackPlayer.setCurrentSession(null);
-        }
-        // If in PvP game and black player quits
-        else if (sender == blackPlayer) {
-            redPlayer.sendMessage(quitMsg);
-        }
-        // Set current session to null for sender and remove session from game manager
+
+        // Always clean up session state for the quitting player and remove the session
         sender.setCurrentSession(null);
         gameManager.removeSession(this);
     }
@@ -575,7 +579,8 @@ public class GameSession {
     public synchronized void handleUndo(ClientHandler sender) {
         // For AI game, undo last two moves (opponent & current player)
         if (isAIGame) {
-            if (history.size() < 2) return;
+            if (history.size() < 2)
+                return;
             // Remove opponent's last move
             history.remove(history.size() - 1);
             // Remove current player's last move
@@ -586,7 +591,8 @@ public class GameSession {
         }
         // For local game, undo last move
         else if (isLocalGame) {
-            if (history.isEmpty()) return;
+            if (history.isEmpty())
+                return;
             GameState previousState = history.remove(history.size() - 1);
             this.gameState = previousState;
             this.isFirstMoveOfTurn = true;

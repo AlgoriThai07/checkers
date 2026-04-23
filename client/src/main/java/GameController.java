@@ -43,27 +43,27 @@ public class GameController {
 
     private GuiClient app;
     private GameState gameState;
-    private String myColor; // "RED" or "BLACK"
-    private String opponentUsername; // Track opponent for re-invite
-    private boolean isLocalGame = false;
+    private String myColor;
+    private String opponentUsername; // for re-invite
+    private boolean isLocalGame = false; // if the game is local
 
-    // Component tracking
+    // board UI pieces
     private GridPane boardGrid;
     private StackPane[][] boardCells = new StackPane[8][8];
     private StackPane boardContainer;
 
-    // Piece tracking
+    // selected piece and highlighted destinations
     private Position selectedPiece = null;
     private List<Position> highlightedDests = new ArrayList<>();
 
-    // UI Tracking
+    // UI for right panel
     private ListView<String> chatList;
     private TextField chatInput;
     private Button undoButton;
 
-    private Label statusLabel;
-    private Label p1NameLabel;
-    private Label p2NameLabel;
+    private Label statusLabel; // 's turn
+    private Label p1NameLabel; // bottom
+    private Label p2NameLabel; // top
     private Label p1CapturedLabel;
     private Label p2CapturedLabel;
     private VBox controlsBox;
@@ -85,22 +85,22 @@ public class GameController {
         return scene;
     }
 
-    private BorderPane createGameLayout() {
+    private BorderPane createGameLayout(){
         BorderPane root = new BorderPane();
         root.getStyleClass().add("root");
 
-        // Right: Chat and controls
+        // Right side for chat and controls
         VBox rightPanel = createRightPanel();
         root.setRight(rightPanel);
 
-        // Center: Game board (passing root and side panel for responsive square
-        // binding)
+        // Name + captured pieces count
         VBox centerContent = createBoardSection(root, rightPanel);
         root.setCenter(centerContent);
 
         return root;
     }
 
+    // Label for name and captured pieces count
     private HBox createPlayerInfo(boolean isPlayer1) {
         HBox playerInfo = new HBox(15);
         playerInfo.setPadding(new Insets(15, 25, 15, 25));
@@ -113,20 +113,24 @@ public class GameController {
         nameLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
         nameLabel.getStyleClass().add(isPlayer1 ? "username-label" : "title");
 
-        if (isPlayer1)
+        if (isPlayer1) {
             p1NameLabel = nameLabel;
-        else
+        }
+        else {
             p2NameLabel = nameLabel;
+        }
 
         // Captured pieces count
         Label capturedLabel = new Label("Captured: 0");
         capturedLabel.setFont(Font.font("System", 13));
         capturedLabel.getStyleClass().add("secondary-text");
 
-        if (isPlayer1)
+        if (isPlayer1) {
             p1CapturedLabel = capturedLabel;
-        else
+        }
+        else {
             p2CapturedLabel = capturedLabel;
+        }
 
         // Spacer
         Region spacer = new Region();
@@ -142,7 +146,7 @@ public class GameController {
         boardSection.setPadding(new Insets(10, 20, 10, 20));
         boardSection.setAlignment(Pos.CENTER);
 
-        // Status label (Turn indicator) - Moved to bottom of board section
+        // Waiting for match label
         statusLabel = new Label("Waiting for match...");
         statusLabel.setFont(Font.font("System", FontWeight.BOLD, 15));
         statusLabel.getStyleClass().add("status-label");
@@ -150,26 +154,23 @@ public class GameController {
         statusLabel.setMaxWidth(Double.MAX_VALUE);
         statusLabel.setPadding(new Insets(12));
 
-        // Player 2 info (opponent - top)
+        // Player 2 info (top)
         HBox player2Info = createPlayerInfo(false);
 
         // Board container to maintain square aspect ratio
         boardContainer = new StackPane();
         boardContainer.getStyleClass().add("board-container");
 
-        // Fix board sizing: bind to Parent BorderPane size minus the side panel and
-        // top/bottom padding
-        // This avoids the 0-size initialization issue
         boardContainer.maxWidthProperty().bind(Bindings.min(
-                root.widthProperty().subtract(380), // Space for right panel + padding
-                root.heightProperty().subtract(260) // Space for top bar + bottom labels + padding
+                root.widthProperty().subtract(380), // Space for right panel and padding
+                root.heightProperty().subtract(260) // Space for top bar and bottom label and padding
         ));
-        boardContainer.setPrefSize(400, 400); // Set a reasonable initial size to prevent jumping
+        boardContainer.setPrefSize(400, 400); // Initial size
         boardContainer.maxHeightProperty().bind(boardContainer.maxWidthProperty());
         boardContainer.minWidthProperty().bind(boardContainer.maxWidthProperty());
         boardContainer.minHeightProperty().bind(boardContainer.maxHeightProperty());
 
-        // Create 8x8 board
+        // Initialize 8x8 board
         boardGrid = createBoard();
         boardContainer.getChildren().add(boardGrid);
 
@@ -187,7 +188,7 @@ public class GameController {
         grid.maxWidthProperty().bind(boardContainer.maxWidthProperty());
         grid.maxHeightProperty().bind(boardContainer.maxHeightProperty());
 
-        // Create 8x8 grid
+        // Initialize 8x8 grid
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 StackPane cell = createBoardCell(row, col);
@@ -196,7 +197,7 @@ public class GameController {
             }
         }
 
-        // Set column and row constraints for equal sizing
+        // Set columns and rows
         for (int i = 0; i < 8; i++) {
             ColumnConstraints colConstraints = new ColumnConstraints();
             colConstraints.setPercentWidth(12.5);
@@ -226,6 +227,8 @@ public class GameController {
         return cell;
     }
 
+    // Draw a single piece
+    // Kings will have a gold ring to differentiate
     private Circle createPiece(PieceType pt) {
         boolean isGreen = (pt == PieceType.RED || pt == PieceType.RED_KING);
         boolean isKing = (pt == PieceType.RED_KING || pt == PieceType.BLACK_KING);
@@ -245,12 +248,13 @@ public class GameController {
 
         if (isKing) {
             piece.setStrokeWidth(5);
-            piece.setStroke(Color.web("#FFD166")); // Neon Gold marker for King
+            piece.setStroke(Color.web("#FFD166")); // Gold marker for King
         }
 
         return piece;
     }
 
+    // Chatbox and action buttons
     private VBox createRightPanel() {
         VBox rightPanel = new VBox(15);
         rightPanel.setPadding(new Insets(20));
@@ -296,7 +300,6 @@ public class GameController {
         controlsBox.setPadding(new Insets(10, 0, 0, 0));
 
         // Buttons will be populated by updateControlButtons() after game starts
-
         rightPanel.getChildren().addAll(
                 chatLabel,
                 chatList,
@@ -306,17 +309,13 @@ public class GameController {
         return rightPanel;
     }
 
-    // ========================================
-    // BOARD RENDERING & CLICK HANDLING
-    // ========================================
-
+    // Render board and handle clicks
     private int getPhysicalRow(int logicalRow) {
         // Red is logical 0-2, Black is logical 5-7.
-        // We want our color at physical 5-7 (bottom).
         if (myColor != null && myColor.equals("RED")) {
-            return 7 - logicalRow; // Flip Red (0) to Bottom (7)
+            return 7 - logicalRow; // Flip
         }
-        return logicalRow; // Keep Black (7) at Bottom (7)
+        return logicalRow;
     }
 
     private int getPhysicalCol(int logicalCol) {
@@ -340,10 +339,11 @@ public class GameController {
         return physicalCol;
     }
 
+    // Clear the board and redraw everything
     private void renderBoard(GameState state) {
         if (boardGrid == null)
             return;
-        highlightedDests.clear();
+        highlightedDests.clear(); // Clear highlighted destinations
 
         PieceType[][] board = state.getBoard();
 
@@ -364,6 +364,7 @@ public class GameController {
         updateCapturedCounts(state);
     }
 
+    // Count pieces on the board and update captured counts
     private void updateCapturedCounts(GameState state) {
         if (state == null) return;
         PieceType[][] board = state.getBoard();
@@ -376,10 +377,10 @@ public class GameController {
             }
         }
         // Each player starts with 12 pieces
-        int redCaptured = 12 - blackCount;  // Red captured this many black pieces
-        int blackCaptured = 12 - redCount;  // Black captured this many red pieces
+        int redCaptured = 12 - blackCount;
+        int blackCaptured = 12 - redCount;
 
-        // p1 is always "me" (bottom), p2 is opponent (top)
+        // player is at the bottom, other player is at the top
         if (myColor != null && myColor.equals("RED")) {
             if (p1CapturedLabel != null) p1CapturedLabel.setText("Captured: " + redCaptured);
             if (p2CapturedLabel != null) p2CapturedLabel.setText("Captured: " + blackCaptured);
@@ -389,20 +390,22 @@ public class GameController {
         }
     }
 
+    // Highlight a square the piece can move to 
     private void highlightSquare(int row, int col) {
         int physR = getPhysicalRow(row);
         int physC = getPhysicalCol(col);
         Rectangle highlight = new Rectangle();
-        highlight.setFill(Color.rgb(129, 182, 76, 0.45)); // lime green
+        highlight.setFill(Color.rgb(129, 182, 76, 0.45));
         highlight.setStroke(Color.web("#81b64c"));
         highlight.setStrokeWidth(2);
         highlight.setStrokeType(StrokeType.INSIDE);
         highlight.widthProperty().bind(boardCells[physR][physC].widthProperty());
         highlight.heightProperty().bind(boardCells[physR][physC].heightProperty());
-        highlight.setMouseTransparent(true); // Don't steal cell clicks
+        highlight.setMouseTransparent(true);
         boardCells[physR][physC].getChildren().add(highlight);
     }
 
+    // Yellow on the piece that is selected
     private void highlightSelected(int row, int col) {
         int physR = getPhysicalRow(row);
         int physC = getPhysicalCol(col);
@@ -417,26 +420,27 @@ public class GameController {
         boardCells[physR][physC].getChildren().add(sel);
     }
 
+    // Each time a cell is clicked, check if it is a valid move
     private void handleCellClick(int physRow, int physCol) {
         if (gameState == null)
             return;
         if (!isMyTurn())
-            return; // ignore clicks when not your turn
+            return; // Ignore clicks when not my turn
 
         int row = getLogicalRow(physRow);
         int col = getLogicalCol(physCol);
 
         PieceType piece = gameState.getBoard()[row][col];
-        // In local mode, use the current turn's color for ownership check
+        // In local mode check
         String activeColor = isLocalGame ? gameState.getCurrentTurn() : myColor;
 
-        // Check clicked piece belongs to the active player
+        // Check clicked piece belongs to my player
         boolean ownsPiece = activeColor.equals("RED")
                 ? (piece == PieceType.RED || piece == PieceType.RED_KING)
                 : (piece == PieceType.BLACK || piece == PieceType.BLACK_KING);
 
         if (!ownsPiece) {
-            // Maybe clicking a highlighted destination
+            // If clicking a highlighted destination
             if (highlightedDests.contains(new Position(row, col))) {
                 handleDestClick(row, col);
             }
@@ -453,9 +457,9 @@ public class GameController {
         }
 
         if (dests.isEmpty())
-            return; // no moves from this piece
+            return; // no moves available
 
-        // Re-render to clear old highlights, then apply new ones
+        // clear old highlights, then apply new ones
         renderBoard(gameState);
         selectedPiece = new Position(row, col);
         highlightedDests = dests;
@@ -466,6 +470,7 @@ public class GameController {
         }
     }
 
+    // Handle destination click, send move to server
     private void handleDestClick(int row, int col) {
         if (selectedPiece == null)
             return;
@@ -482,6 +487,7 @@ public class GameController {
         return gameState != null && myColor != null && myColor.equals(gameState.getCurrentTurn());
     }
 
+    // Handle send message
     private void handleSendMessage() {
         String text = chatInput.getText().trim();
         if (!text.isEmpty()) {
@@ -496,7 +502,9 @@ public class GameController {
         }
     }
 
+    // Offer draw logic
     private void handleOfferDraw() {
+        // Handle local game draw offer
         if (isLocalGame) {
             showCustomModal(
                 "Draw",
@@ -512,6 +520,7 @@ public class GameController {
             );
             return;
         }
+        // AI auto accept draw offer
         if (gameState != null && (gameState.getBlackPlayer().equals("AI") || gameState.getRedPlayer().equals("AI"))) {
             showCustomModal(
                 "Draw Accepted",
@@ -533,7 +542,7 @@ public class GameController {
     }
 
     public void onDrawOffer(Message message) {
-        // Opponent is offering a draw — show accept/decline modal
+        // Opponent offers a draw 
         showCustomModal(
             "Draw Offer",
             "Your opponent is offering a draw.",
@@ -546,10 +555,11 @@ public class GameController {
     }
 
     public void onDrawDecline(Message message) {
-        // Our draw offer was declined — notify and continue playing
+        // If declined, notify and continue playing
         chatList.getItems().add("[System] Opponent declined your draw offer.");
     }
 
+    // Handle resign
     private void handleResign() {
         showCustomModal(
             "Resign",
@@ -561,16 +571,18 @@ public class GameController {
                 app.send(new Message(MessageType.QUIT));
                 app.switchToScene("lobby");
             },
-            () -> { /* Do nothing on cancel */ }
+            () -> { /* cancel */  }
         );
     }
 
+    // Handle exit local game
     private void handleExit() {
         System.out.println("Exit game clicked");
         app.send(new Message(MessageType.QUIT));
         app.switchToScene("lobby");
     }
 
+    // Handle undo
     private void handleUndo() {
         if (undoButton != null) {
             undoButton.setDisable(true);
@@ -578,20 +590,21 @@ public class GameController {
         app.send(new Message(MessageType.UNDO));
     }
 
+    // Update undo button, enable/disable based on game state
     private void updateUndoButton() {
         if (undoButton == null || gameState == null) return;
         boolean isAIGame = gameState.getBlackPlayer().equals("AI") || gameState.getRedPlayer().equals("AI");
         if (isLocalGame) {
             undoButton.setDisable(gameState.getHistoryCount() < 1);
         } else if (isAIGame) {
+            // must have 2 moves to undo
             undoButton.setDisable(!isMyTurn() || gameState.getHistoryCount() < 2);
         }
     }
 
-    // ========================================
-    // MESSAGE HANDLERS (called from GuiClient)
-    // ========================================
-
+    
+    // Handlers called by GuiClient
+    // Handle game start, set up and draw the board
     public void onGameStart(Message message) {
         gameState = message.getGameState();
         isLocalGame = "Opponent".equals(gameState.getBlackPlayer());
@@ -600,7 +613,7 @@ public class GameController {
         String myDisplayColor = myColor.equals("RED") ? "Green" : "Purple";
         String opponentDisplayColor = myColor.equals("RED") ? "Purple" : "Green";
 
-        // Assign labels so that Player 1 (Bottom Label) is always US.
+        // Player 1 label - always at the bottom
         if (myColor.equals("RED")) {
             opponentUsername = gameState.getBlackPlayer();
             p1NameLabel.setText(app.getUsername() + " (Green)");
@@ -622,6 +635,7 @@ public class GameController {
         chatList.getItems().add("[System] Game started! You are " + myDisplayColor);
     }
 
+    // Update control buttons based on game state
     private void updateControlButtons() {
         controlsBox.getChildren().clear();
 
@@ -634,6 +648,7 @@ public class GameController {
 
         boolean isAIGame = gameState != null && (gameState.getBlackPlayer().equals("AI") || gameState.getRedPlayer().equals("AI"));
         
+        // Undo only works for bot and local game
         if (isLocalGame || isAIGame) {
             undoButton = new Button("Undo");
             undoButton.setPrefHeight(60);
@@ -645,7 +660,7 @@ public class GameController {
         }
 
         if (isLocalGame) {
-            // Local mode: Draw + Quit only
+            // Local mode: draw and quit only
             Button quitButton = new Button("Quit Game");
             quitButton.setPrefHeight(60);
             quitButton.setMaxWidth(Double.MAX_VALUE);
@@ -655,7 +670,7 @@ public class GameController {
 
             controlsBox.getChildren().addAll(offerDrawButton, quitButton);
         } else {
-            // AI / Online: Draw + Resign
+            // AI / Online: draw and resign
             Button resignButton = new Button("Resign");
             resignButton.setPrefHeight(60);
             resignButton.setMaxWidth(Double.MAX_VALUE);
@@ -667,6 +682,7 @@ public class GameController {
         }
     }
 
+    // Update the board after a move
     public void onGameUpdate(Message message) {
         gameState = message.getGameState();
         updateTurnLabel();
@@ -674,6 +690,7 @@ public class GameController {
         renderBoard(gameState);
     }
 
+    // Handle invalid move - clear highlights and redraw board
     public void onInvalidMove(Message message) {
         selectedPiece = null;
         highlightedDests.clear();
@@ -682,6 +699,7 @@ public class GameController {
         chatList.getItems().add("[System] Invalid move: " + message.getContent());
     }
 
+    // Game ended - show w/l/d popup with options to play again or quit to lobby
     public void onGameOver(Message message) {
         gameState = message.getGameState();
         renderBoard(gameState);
@@ -714,6 +732,7 @@ public class GameController {
         );
     }
 
+    // Show a custom modal with a title, subtitle, and two buttons
     private void showCustomModal(String title, String subtitle, boolean isGoldIcon, String leftBtnText, String rightBtnText, Runnable onLeftClick, Runnable onRightClick) {
         Stage dialogStage = new Stage();
         dialogStage.initModality(Modality.APPLICATION_MODAL);
@@ -730,22 +749,22 @@ public class GameController {
         dialogRoot.setPadding(new Insets(40, 50, 40, 50));
         dialogRoot.setStyle("-fx-background-color: #111419; -fx-background-radius: 12; -fx-border-color: rgba(0,240,255,0.3); -fx-border-radius: 12; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,240,255,0.2), 25, 0, 0, 0);");
 
-        // Icon
+        // Icon with trophy for win, flag for draw
         Label iconLabel = new Label(isGoldIcon ? "★" : "⚑");
         iconLabel.setStyle("-fx-font-size: 48; -fx-text-fill: #FFD166; -fx-background-color: #1a2030; -fx-background-radius: 50; -fx-padding: 20 28 20 28;");
         iconLabel.setAlignment(Pos.CENTER);
 
-        // Title
+        // Title with game over, you win, you lost, or it's a draw
         Label titleLabel = new Label(title);
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 26));
         titleLabel.setTextFill(Color.web("#e6eef6"));
 
-        // Subtitle
+        // Subtitle with result text
         Label subLabel = new Label(subtitle);
         subLabel.setFont(Font.font("System", 16));
         subLabel.setTextFill(Color.web("#9aa6b2"));
 
-        // Buttons
+        // Buttons with play again and quit to lobby
         HBox buttonBox = new HBox(15);
         buttonBox.setAlignment(Pos.CENTER);
 
@@ -772,12 +791,14 @@ public class GameController {
         dialogStage.showAndWait();
     }
 
+    // Chat message received, add to chat list
     public void onChat(Message message) {
         String sender = message.getSender() != null ? message.getSender() : "Opponent";
         chatList.getItems().add(sender + ": " + message.getContent());
         chatList.scrollTo(chatList.getItems().size() - 1);
     }
 
+    // Opponent quit - show win popup and invite again
     public void onOpponentQuit(Message message) {
         chatList.getItems().add("[System] Opponent left the game.");
         String opponent = opponentUsername;
@@ -788,7 +809,7 @@ public class GameController {
             "↻ Play Again",
             "← Lobby",
             () -> {
-                // Re-invite the opponent to a new game
+                // Invite the opponent to a new game
                 if (opponent != null && !"AI".equals(opponent) && !"Opponent".equals(opponent)) {
                     app.send(new Message(MessageType.MATCH_INVITE, opponent));
                     app.switchToScene("lobby");
@@ -802,10 +823,8 @@ public class GameController {
         );
     }
 
-    // ========================================
-    // HELPERS
-    // ========================================
 
+    // Update the turn label at the bottom
     private void updateTurnLabel() {
         if (gameState == null)
             return;

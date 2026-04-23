@@ -16,6 +16,7 @@ public class LoginController {
 
     private GuiClient app;
 
+    // Fields for the login form
     private TextField usernameField;
     private PasswordField passwordField;
     private Label errorLabel;
@@ -26,6 +27,7 @@ public class LoginController {
         this.app = app;
     }
 
+    // Create the login scene
     public Scene createScene() {
         VBox root = new VBox(30);
         root.setAlignment(Pos.CENTER);
@@ -87,12 +89,12 @@ public class LoginController {
         loginButton.getStyleClass().add("primary-button");
         loginButton.setOnAction(e -> handleLogin());
 
-        // Make Enter key trigger login
+        // Handle login when enter key is pressed
         passwordField.setOnAction(e -> handleLogin());
 
         formBox.getChildren().addAll(usernameBox, passwordBox, errorLabel, loginButton);
 
-        // Sign up link
+        // Sign up link to the signup scene
         HBox signupBox = new HBox(5);
         signupBox.setAlignment(Pos.CENTER);
 
@@ -104,8 +106,10 @@ public class LoginController {
         signupLink.getStyleClass().add("link-button");
         signupLink.setOnAction(e -> handleSignUp());
 
+        // Add the signup link to the signup box
         signupBox.getChildren().addAll(signupPrompt, signupLink);
 
+        // Add the title box, form box, and signup box to the root
         root.getChildren().addAll(titleBox, formBox, signupBox);
 
         Scene scene = new Scene(root, 400, 500);
@@ -118,10 +122,12 @@ public class LoginController {
         return scene;
     }
 
+    // Handle login when the login button is clicked
     private void handleLogin() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
+        // Clear previous error
         errorLabel.setVisible(false);
         errorLabel.setManaged(false);
 
@@ -150,6 +156,7 @@ public class LoginController {
         app.switchToScene("signup");
     }
 
+    // Show an error message
     public void showError(String message) {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
@@ -158,6 +165,7 @@ public class LoginController {
         loginButton.setText("LOGIN");
     }
 
+    // Reset the login form
     public void reset() {
         loginButton.setDisable(false);
         loginButton.setText("LOGIN");
