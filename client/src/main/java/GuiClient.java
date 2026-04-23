@@ -98,7 +98,6 @@ public class GuiClient extends Application {
                     break;
                 case QUIT:
                     gameController.onOpponentQuit(message);
-                    switchToScene("lobby");
                     break;
                 case DRAW_OFFER:
                     gameController.onDrawOffer(message);

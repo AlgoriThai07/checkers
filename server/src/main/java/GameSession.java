@@ -24,7 +24,7 @@ public class GameSession {
     private boolean blackWantsPlayAgain = false;
 
     public GameSession(ClientHandler redPlayer, ClientHandler blackPlayer, AIPlayer aiPlayer,
-                       GameManager gameManager, DatabaseManager databaseManager) {
+            GameManager gameManager, DatabaseManager databaseManager) {
         this.redPlayer = redPlayer;
         this.blackPlayer = blackPlayer;
         this.aiPlayer = aiPlayer;
@@ -43,8 +43,10 @@ public class GameSession {
     }
 
     public boolean hasPlayer(String username) {
-        if (redPlayer != null && username.equals(redPlayer.getUsername())) return true;
-        if (blackPlayer != null && username.equals(blackPlayer.getUsername())) return true;
+        if (redPlayer != null && username.equals(redPlayer.getUsername()))
+            return true;
+        if (blackPlayer != null && username.equals(blackPlayer.getUsername()))
+            return true;
         return false;
     }
 
@@ -106,7 +108,6 @@ public class GameSession {
         gameState.setBoard(board);
     }
 
-
     public synchronized void handleMove(ClientHandler sender, Move move) {
         // In local mode, the single client controls both sides
         String senderColor;
@@ -132,8 +133,21 @@ public class GameSession {
         applyMove(fullMove);
         // Check if the game is over
         checkGameOver();
-        // If the game is not over, switch turns and broadcast
+        // If the game is not over, check for chain jumps or switch turns
         if (gameState.getStatus().equals("IN_PROGRESS")) {
+            // If this was a jump, check if the same piece can jump again
+            if (!fullMove.getCaptured().isEmpty()) {
+                Position landPos = fullMove.getTo();
+                PieceType landedPiece = gameState.getBoard()[landPos.getRow()][landPos.getCol()];
+                List<Move> continuationJumps = findAllJumpsFromPiece(
+                        gameState.getBoard(), landPos.getRow(), landPos.getCol(), landedPiece);
+                if (!continuationJumps.isEmpty()) {
+                    // Keep same turn, restrict to only this piece's jumps
+                    gameState.setValidMoves(continuationJumps);
+                    broadcastGameUpdate();
+                    return;
+                }
+            }
             switchTurnAndBroadcast();
         } else {
             broadcastGameOver();
@@ -176,7 +190,8 @@ public class GameSession {
 
             synchronized (GameSession.this) {
                 // Ensure game is still in progress before AI makes a move
-                if (!gameState.getStatus().equals("IN_PROGRESS")) return;
+                if (!gameState.getStatus().equals("IN_PROGRESS"))
+                    return;
 
                 // Get AI move
                 Move aiMove = aiPlayer.getMove(gameState);
@@ -184,7 +199,7 @@ public class GameSession {
                     // Find matching valid move for proper captured list
                     Move fullAiMove = findMatchingValidMove(aiMove);
                     if (fullAiMove == null) {
-                       fullAiMove = aiMove;
+                        fullAiMove = aiMove;
                     }
                     // Apply AI move
                     applyMove(fullAiMove);
@@ -209,6 +224,7 @@ public class GameSession {
             }
         }).start();
     }
+
     // Find matching valid move from list of valid moves
     private Move findMatchingValidMove(Move move) {
         for (Move validMove : gameState.getValidMoves()) {
@@ -301,7 +317,8 @@ public class GameSession {
     }
 
     private void sendStatsUpdate(ClientHandler player) {
-        if (player == null) return;
+        if (player == null)
+            return;
         User stats = databaseManager.getStats(player.getUsername());
         if (stats != null) {
             String payload = stats.getWins() + ":" + stats.getLosses() + ":" + stats.getDraws();
@@ -321,7 +338,8 @@ public class GameSession {
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 PieceType piece = board[r][c];
-                if (!belongsTo(piece, color)) continue;
+                if (!belongsTo(piece, color))
+                    continue;
 
                 // Find jump sequences for this piece
                 List<Move> pieceJumps = findAllJumpsFromPiece(board, r, c, piece);
@@ -357,8 +375,10 @@ public class GameSession {
     }
 
     static String getColor(PieceType piece) {
-        if (piece == PieceType.RED || piece == PieceType.RED_KING) return "RED";
-        if (piece == PieceType.BLACK || piece == PieceType.BLACK_KING) return "BLACK";
+        if (piece == PieceType.RED || piece == PieceType.RED_KING)
+            return "RED";
+        if (piece == PieceType.BLACK || piece == PieceType.BLACK_KING)
+            return "BLACK";
         return null;
     }
 
@@ -368,18 +388,18 @@ public class GameSession {
 
     static int[] getRowDirections(PieceType piece) {
         if (isKing(piece)) {
-            return new int[]{-1, 1};
+            return new int[] { -1, 1 };
         }
         if (piece == PieceType.RED) {
-            return new int[]{1}; // Red moves toward increasing rows
+            return new int[] { 1 }; // Red moves toward increasing rows
         }
-        return new int[]{-1}; // Black moves toward decreasing rows
+        return new int[] { -1 }; // Black moves toward decreasing rows
     }
 
     private static List<Move> findSimpleMoves(PieceType[][] board, int row, int col, PieceType piece) {
         List<Move> moves = new ArrayList<>();
         int[] rowDirs = getRowDirections(piece);
-        int[] colDirs = {-1, 1};
+        int[] colDirs = { -1, 1 };
 
         for (int dr : rowDirs) {
             for (int dc : colDirs) {
@@ -391,87 +411,38 @@ public class GameSession {
             }
         }
         return moves;
-    }
-
-    /**
-     * Find all possible jump sequences starting from (startRow, startCol).
-     * Each returned Move has from=(startRow,startCol), to=final landing, captured=all jumped pieces.
+    }    /**
+     * Find single-step jumps from (startRow, startCol).
+     * No chain — each jump captures exactly one piece.
      */
     private static List<Move> findAllJumpsFromPiece(PieceType[][] board, int startRow, int startCol, PieceType piece) {
         List<Move> results = new ArrayList<>();
         String color = getColor(piece);
-        List<Position> captured = new ArrayList<>();
-        exploreJumps(board, startRow, startCol, startRow, startCol, piece, color, captured, results);
-        return results;
-    }
-
-    private static void exploreJumps(PieceType[][] board,
-                                      int origRow, int origCol,
-                                      int curRow, int curCol,
-                                      PieceType piece, String color,
-                                      List<Position> capturedSoFar,
-                                      List<Move> results) {
         int[] rowDirs = getRowDirections(piece);
-        int[] colDirs = {-1, 1};
-        boolean foundJump = false;
+        int[] colDirs = { -1, 1 };
 
         for (int dr : rowDirs) {
             for (int dc : colDirs) {
-                int midRow = curRow + dr;
-                int midCol = curCol + dc;
-                int landRow = curRow + 2 * dr;
-                int landCol = curCol + 2 * dc;
+                int midRow = startRow + dr;
+                int midCol = startCol + dc;
+                int landRow = startRow + 2 * dr;
+                int landCol = startCol + 2 * dc;
 
-                if (!inBounds(landRow, landCol)) continue;
-
-                Position midPos = new Position(midRow, midCol);
+                if (!inBounds(landRow, landCol))
+                    continue;
 
                 if (isOpponent(board[midRow][midCol], color)
-                        && board[landRow][landCol] == PieceType.EMPTY
-                        && !capturedSoFar.contains(midPos)) {
-
-                    foundJump = true;
-
-                    List<Position> newCaptured = new ArrayList<>(capturedSoFar);
-                    newCaptured.add(midPos);
-
-                    // Check promotion at landing
-                    PieceType landingPiece = piece;
-                    if (piece == PieceType.RED && landRow == 7) {
-                        landingPiece = PieceType.RED_KING;
-                    } else if (piece == PieceType.BLACK && landRow == 0) {
-                        landingPiece = PieceType.BLACK_KING;
-                    }
-
-                    // Temporarily modify board for recursive search
-                    PieceType savedCur = board[curRow][curCol];
-                    PieceType savedMid = board[midRow][midCol];
-                    PieceType savedLand = board[landRow][landCol];
-
-                    board[curRow][curCol] = PieceType.EMPTY;
-                    board[midRow][midCol] = PieceType.EMPTY;
-                    board[landRow][landCol] = landingPiece;
-
-                    int prevSize = results.size();
-                    exploreJumps(board, origRow, origCol, landRow, landCol,
-                                 landingPiece, color, newCaptured, results);
-
-                    // If no further jumps found, this is a terminal jump
-                    if (results.size() == prevSize) {
-                        results.add(new Move(
-                            new Position(origRow, origCol),
+                        && board[landRow][landCol] == PieceType.EMPTY) {
+                    List<Position> captured = new ArrayList<>();
+                    captured.add(new Position(midRow, midCol));
+                    results.add(new Move(
+                            new Position(startRow, startCol),
                             new Position(landRow, landCol),
-                            newCaptured
-                        ));
-                    }
-
-                    // Restore board state
-                    board[curRow][curCol] = savedCur;
-                    board[midRow][midCol] = savedMid;
-                    board[landRow][landCol] = savedLand;
+                            captured));
                 }
             }
         }
+        return results;
     }
 
     static boolean inBounds(int row, int col) {
@@ -483,7 +454,8 @@ public class GameSession {
     // ========================================
 
     public void forwardChat(ClientHandler sender, Message chatMessage) {
-        if (isAIGame || isLocalGame) return;
+        if (isAIGame || isLocalGame)
+            return;
         if (sender == redPlayer && blackPlayer != null) {
             blackPlayer.sendMessage(chatMessage);
         } else {
@@ -564,13 +536,16 @@ public class GameSession {
             redPlayer.sendMessage(quitMsg);
         }
         sender.setCurrentSession(null);
-        if (redPlayer != null) redPlayer.setCurrentSession(null);
+        if (redPlayer != null)
+            redPlayer.setCurrentSession(null);
         gameManager.removeSession(this);
     }
 
     private String getPlayerColor(ClientHandler handler) {
-        if (handler == redPlayer) return "RED";
-        if (handler == blackPlayer) return "BLACK";
+        if (handler == redPlayer)
+            return "RED";
+        if (handler == blackPlayer)
+            return "BLACK";
         return null;
     }
 }

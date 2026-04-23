@@ -44,6 +44,7 @@ public class GameController {
     private GuiClient app;
     private GameState gameState;
     private String myColor; // "RED" or "BLACK"
+    private String opponentUsername; // Track opponent for re-invite
     private boolean isLocalGame = false;
 
     // Component tracking
@@ -64,6 +65,7 @@ public class GameController {
     private Label p2NameLabel;
     private Label p1CapturedLabel;
     private Label p2CapturedLabel;
+    private VBox controlsBox;
 
     public GameController(GuiClient app) {
         this.app = app;
@@ -105,7 +107,7 @@ public class GameController {
         playerInfo.getStyleClass().add("opponent-player-info");
 
         // Player name
-        String displayColor = isPlayer1 ? "(Green)" : "(Black)";
+        String displayColor = isPlayer1 ? "(Green)" : "(Purple)";
         Label nameLabel = new Label(isPlayer1 ? "Player 1 " + displayColor : "Player 2 " + displayColor);
         nameLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
         nameLabel.getStyleClass().add(isPlayer1 ? "username-label" : "title");
@@ -289,24 +291,10 @@ public class GameController {
         controlsLabel.setPadding(new Insets(15, 0, 0, 0));
 
         // Control buttons
-        VBox controlsBox = new VBox(15);
+        controlsBox = new VBox(15);
         controlsBox.setPadding(new Insets(10, 0, 0, 0));
 
-        Button offerDrawButton = new Button("Offer Draw");
-        offerDrawButton.setPrefHeight(60);
-        offerDrawButton.setMaxWidth(Double.MAX_VALUE);
-        offerDrawButton.getStyleClass().add("secondary-button");
-        offerDrawButton.setStyle(offerDrawButton.getStyle() + "-fx-font-size: 16px; -fx-font-weight: bold;");
-        offerDrawButton.setOnAction(e -> handleOfferDraw());
-
-        Button resignButton = new Button("Resign");
-        resignButton.setPrefHeight(60);
-        resignButton.setMaxWidth(Double.MAX_VALUE);
-        resignButton.getStyleClass().add("resign-button");
-        resignButton.setStyle(resignButton.getStyle() + "-fx-font-size: 16px; -fx-font-weight: bold;");
-        resignButton.setOnAction(e -> handleResign());
-
-        controlsBox.getChildren().addAll(offerDrawButton, resignButton);
+        // Buttons will be populated by updateControlButtons() after game starts
 
         rightPanel.getChildren().addAll(
                 chatLabel,
@@ -591,27 +579,61 @@ public class GameController {
         isLocalGame = "Opponent".equals(gameState.getBlackPlayer());
         myColor = gameState.getRedPlayer().equals(app.getUsername()) ? "RED" : "BLACK";
 
-        String myDisplayColor = myColor.equals("RED") ? "Green" : "Black";
-        String opponentDisplayColor = myColor.equals("RED") ? "Black" : "Green";
+        String myDisplayColor = myColor.equals("RED") ? "Green" : "Purple";
+        String opponentDisplayColor = myColor.equals("RED") ? "Purple" : "Green";
 
         // Assign labels so that Player 1 (Bottom Label) is always US.
         if (myColor.equals("RED")) {
-            // We are Red (Green), so we are at the bottom. Opponent is Black, at the top.
+            opponentUsername = gameState.getBlackPlayer();
             p1NameLabel.setText(app.getUsername() + " (Green)");
-            p2NameLabel.setText(gameState.getBlackPlayer() + " (Black)");
+            p2NameLabel.setText(opponentUsername + " (Purple)");
         } else {
-            // We are Black, so we are at the bottom. Opponent is Red (Green), at the top.
-            p1NameLabel.setText(app.getUsername() + " (Black)");
-            p2NameLabel.setText(gameState.getRedPlayer() + " (Green)");
+            opponentUsername = gameState.getRedPlayer();
+            p1NameLabel.setText(app.getUsername() + " (Purple)");
+            p2NameLabel.setText(opponentUsername + " (Green)");
         }
 
 
 
         updateTurnLabel();
+        updateControlButtons();
         renderBoard(gameState);
 
         chatList.getItems().clear();
         chatList.getItems().add("[System] Game started! You are " + myDisplayColor);
+    }
+
+    private void updateControlButtons() {
+        controlsBox.getChildren().clear();
+
+        Button offerDrawButton = new Button("Offer Draw");
+        offerDrawButton.setPrefHeight(60);
+        offerDrawButton.setMaxWidth(Double.MAX_VALUE);
+        offerDrawButton.getStyleClass().add("secondary-button");
+        offerDrawButton.setStyle(offerDrawButton.getStyle() + "-fx-font-size: 16px; -fx-font-weight: bold;");
+        offerDrawButton.setOnAction(e -> handleOfferDraw());
+
+        if (isLocalGame) {
+            // Local mode: Draw + Quit only
+            Button quitButton = new Button("Quit Game");
+            quitButton.setPrefHeight(60);
+            quitButton.setMaxWidth(Double.MAX_VALUE);
+            quitButton.getStyleClass().add("resign-button");
+            quitButton.setStyle(quitButton.getStyle() + "-fx-font-size: 16px; -fx-font-weight: bold;");
+            quitButton.setOnAction(e -> handleExit());
+
+            controlsBox.getChildren().addAll(offerDrawButton, quitButton);
+        } else {
+            // AI / Online: Draw + Resign
+            Button resignButton = new Button("Resign");
+            resignButton.setPrefHeight(60);
+            resignButton.setMaxWidth(Double.MAX_VALUE);
+            resignButton.getStyleClass().add("resign-button");
+            resignButton.setStyle(resignButton.getStyle() + "-fx-font-size: 16px; -fx-font-weight: bold;");
+            resignButton.setOnAction(e -> handleResign());
+
+            controlsBox.getChildren().addAll(offerDrawButton, resignButton);
+        }
     }
 
     public void onGameUpdate(Message message) {
@@ -726,9 +748,26 @@ public class GameController {
 
     public void onOpponentQuit(Message message) {
         chatList.getItems().add("[System] Opponent left the game.");
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Your opponent left the game.", ButtonType.OK);
-        alert.setTitle("Opponent Disconnected");
-        alert.showAndWait();
+        String opponent = opponentUsername;
+        showCustomModal(
+            "You Win!",
+            "Your opponent resigned. You win!",
+            true,
+            "↻ Play Again",
+            "← Lobby",
+            () -> {
+                // Re-invite the opponent to a new game
+                if (opponent != null && !"AI".equals(opponent) && !"Opponent".equals(opponent)) {
+                    app.send(new Message(MessageType.MATCH_INVITE, opponent));
+                    app.switchToScene("lobby");
+                } else {
+                    app.switchToScene("lobby");
+                }
+            },
+            () -> {
+                app.switchToScene("lobby");
+            }
+        );
     }
 
     // ========================================
@@ -740,18 +779,18 @@ public class GameController {
             return;
         if (isLocalGame) {
             String turnColor = gameState.getCurrentTurn();
-            String colorName = turnColor.equals("RED") ? "Green" : "Black";
+            String colorName = turnColor.equals("RED") ? "Green" : "Purple";
             statusLabel.setText(colorName + "'s turn");
-            statusLabel.setStyle("-fx-text-fill: #1a1613; -fx-background-color: #81b64c; -fx-background-radius: 4;");
+            statusLabel.setStyle("-fx-text-fill: #0b0f14; -fx-background-color: #00f0ff; -fx-background-radius: 4;");
         } else if (isMyTurn()) {
-            String colorName = myColor.equals("RED") ? "Green" : "Black";
+            String colorName = myColor.equals("RED") ? "Green" : "Purple";
             statusLabel.setText("Your turn (" + colorName + ")");
-            statusLabel.setStyle("-fx-text-fill: #1a1613; -fx-background-color: #81b64c; -fx-background-radius: 4;");
+            statusLabel.setStyle("-fx-text-fill: #0b0f14; -fx-background-color: #00f0ff; -fx-background-radius: 4;");
         } else {
             String other = myColor.equals("RED") ? "BLACK" : "RED";
-            String colorName = other.equals("RED") ? "Green" : "Black";
+            String colorName = other.equals("RED") ? "Green" : "Purple";
             statusLabel.setText("Opponent's turn (" + colorName + ")");
-            statusLabel.setStyle("-fx-text-fill: #e8e6e3; -fx-background-color: #3d3935; -fx-background-radius: 4;");
+            statusLabel.setStyle("-fx-text-fill: #e6eef6; -fx-background-color: #1a1f26; -fx-background-radius: 4;");
         }
     }
 }
