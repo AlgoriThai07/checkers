@@ -1,8 +1,6 @@
 package model;
 
-import java.io.Serializable;
-
-public enum PieceType implements Serializable {
+public enum PieceType {
     RED,
     BLACK,
     RED_KING,

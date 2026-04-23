@@ -17,7 +17,6 @@ public class Message implements Serializable {
         INVALID_MOVE,
         GAME_OVER,
         CHAT,
-        PLAY_AGAIN,
         QUIT,
         DRAW_OFFER,
         DRAW_ACCEPT,

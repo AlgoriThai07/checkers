@@ -524,22 +524,6 @@ public class GameSession {
         }
     }
 
-    // Handle play again
-    public void handlePlayAgain(ClientHandler sender) {
-        // Mark the sender as wanting to play again
-        if (sender == redPlayer) {
-            redWantsPlayAgain = true;
-        } else if (sender == blackPlayer) {
-            blackWantsPlayAgain = true;
-        }
-        // Start new game if both players want to play again
-        if ((isAIGame || isLocalGame) && redWantsPlayAgain) {
-            startGame();
-        } else if (!isAIGame && !isLocalGame && redWantsPlayAgain && blackWantsPlayAgain) {
-            startGame();
-        }
-    }
-
     public void handleQuit(ClientHandler sender) {
         // If the game is already over, just return to lobby
         boolean gameAlreadyOver = !"IN_PROGRESS".equals(gameState.getStatus());

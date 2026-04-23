@@ -512,7 +512,7 @@ public class GameController {
                 true,
                 "↻ Play Again",
                 "← Lobby",
-                () -> app.send(new Message(MessageType.PLAY_AGAIN)),
+                () -> app.send(new Message(MessageType.QUEUE, "LOCAL")),
                 () -> {
                     app.send(new Message(MessageType.QUIT));
                     app.switchToScene("lobby");
@@ -528,7 +528,7 @@ public class GameController {
                 true,
                 "↻ Play Again",
                 "← Lobby",
-                () -> app.send(new Message(MessageType.PLAY_AGAIN)),
+                () -> app.send(new Message(MessageType.QUEUE, "AI")),
                 () -> {
                     app.send(new Message(MessageType.QUIT));
                     app.switchToScene("lobby");
@@ -577,9 +577,18 @@ public class GameController {
 
     // Handle exit local game
     private void handleExit() {
-        System.out.println("Exit game clicked");
-        app.send(new Message(MessageType.QUIT));
-        app.switchToScene("lobby");
+        showCustomModal(
+            "Quit Game",
+            "Are you sure you want to quit?",
+            false,
+            "Yes, Quit",
+            "Cancel",
+            () -> {
+                app.send(new Message(MessageType.QUIT));
+                app.switchToScene("lobby");
+            },
+            () -> {}
+        );
     }
 
     // Handle undo
@@ -713,14 +722,16 @@ public class GameController {
         } else {
             resultText = "It's a draw!";
         }
-
         showCustomModal(
             "Game Over",
             resultText,
             isWin,
             "↻ Play Again",
             "← Lobby",
-            () -> app.send(new Message(MessageType.PLAY_AGAIN)),
+            () -> {
+                app.send(new Message(MessageType.QUEUE, "PVP"));
+                app.switchToScene("matchmaking");
+            },
             () -> {
                 app.send(new Message(MessageType.QUIT));
                 app.switchToScene("lobby");
@@ -794,10 +805,9 @@ public class GameController {
         chatList.scrollTo(chatList.getItems().size() - 1);
     }
 
-    // Opponent quit - show win popup and invite again
+    // Opponent quit - show win popup and go to matchmaking
     public void onOpponentQuit(Message message) {
         chatList.getItems().add("[System] Opponent left the game.");
-        String opponent = opponentUsername;
         showCustomModal(
             "You Win!",
             "Your opponent resigned. You win!",
@@ -805,17 +815,10 @@ public class GameController {
             "↻ Play Again",
             "← Lobby",
             () -> {
-                // Invite the opponent to a new game
-                if (opponent != null && !"AI".equals(opponent) && !"Opponent".equals(opponent)) {
-                    app.send(new Message(MessageType.MATCH_INVITE, opponent));
-                    app.switchToScene("lobby");
-                } else {
-                    app.switchToScene("lobby");
-                }
+                app.send(new Message(MessageType.QUEUE, "PVP"));
+                app.switchToScene("matchmaking");
             },
-            () -> {
-                app.switchToScene("lobby");
-            }
+            () -> app.switchToScene("lobby")
         );
     }
 
