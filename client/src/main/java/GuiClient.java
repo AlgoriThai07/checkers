@@ -7,7 +7,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import model.Message;
-import model.Message.MessageType;
 
 public class GuiClient extends Application {
 
@@ -17,8 +16,8 @@ public class GuiClient extends Application {
 
     String username = "";
 
-    LoginController loginController; // ADDED: Controller for our awesome new Figma Login Screen
-    SignUpController signUpController; // ADDED: Controller for our Sign Up Screen
+    LoginController loginController;
+    SignUpController signUpController; 
     LobbyController lobbyController;
     GameController gameController;
     MatchmakingController matchmakingController;

@@ -48,6 +48,9 @@ public class ClientHandler extends Thread {
                     case QUEUE:
                         handleQueue(message);
                         break;
+                    case LEAVE_QUEUE:
+                        gameManager.removeFromQueue(this);
+                        break;
                     case MOVE:
                         handleMove(message);
                         break;
@@ -61,13 +64,19 @@ public class ClientHandler extends Thread {
                         handleQuit();
                         break;
                     case DRAW_OFFER:
-                        if (currentSession != null) currentSession.forwardDrawOffer(this);
+                        if (currentSession != null) {
+                            currentSession.forwardDrawOffer(this);
+                        }
                         break;
                     case DRAW_ACCEPT:
-                        if (currentSession != null) currentSession.handleDrawAccept(this);
+                        if (currentSession != null) {
+                            currentSession.handleDrawAccept(this);
+                        }
                         break;
                     case DRAW_DECLINE:
-                        if (currentSession != null) currentSession.handleDrawDecline(this);
+                        if (currentSession != null) {
+                            currentSession.handleDrawDecline(this);
+                        }
                         break;
                     case ADD_FRIEND:
                         gameManager.handleAddFriend(this, message.getContent());
@@ -88,7 +97,9 @@ public class ClientHandler extends Thread {
                         gameManager.handleMatchInviteDecline(this, message.getContent());
                         break;
                     case UNDO:
-                        if (currentSession != null) currentSession.handleUndo(this);
+                        if (currentSession != null) {
+                            currentSession.handleUndo(this);
+                        }
                         break;
                     default:
                         break;
@@ -101,15 +112,20 @@ public class ClientHandler extends Thread {
         }
     }
 
+    
     private void handleRegister(Message message) {
+        // Extract username and password
         String[] parts = message.getContent().split(":");
         if (parts.length == 2) {
+            // Register the user on DB
             boolean success = databaseManager.register(parts[0], parts[1]);
             if (success) {
                 this.username = parts[0];
+                // Send success response
                 Message response = new Message(MessageType.AUTH_SUCCESS, "Registration successful");
                 response.setSender(username);
                 sendMessage(response);
+                // Add client to the game manager
                 gameManager.addClient(this);
             } else {
                 sendMessage(new Message(MessageType.AUTH_FAIL, "Username already taken"));
@@ -120,35 +136,45 @@ public class ClientHandler extends Thread {
     }
 
     private void handleLogin(Message message) {
+        // Extract username and password
         String[] parts = message.getContent().split(":");
         if (parts.length == 2) {
+            // Login user on DB
             User user = databaseManager.login(parts[0], parts[1]);
+            // If user is found
             if (user != null) {
                 this.username = parts[0];
+                // Send success response with user stats
                 String statsPayload = "Login successful:" + user.getWins() + ":" + user.getLosses() + ":" + user.getDraws();
                 Message response = new Message(MessageType.AUTH_SUCCESS, statsPayload);
                 response.setSender(username);
                 sendMessage(response);
+                // Add client to the game manager
                 gameManager.addClient(this);
-            } else {
-                sendMessage(new Message(MessageType.AUTH_FAIL, "Invalid credentials"));
+            } 
+            else {
+                sendMessage(new Message(MessageType.AUTH_FAIL, "Username or password incorrect"));
             }
-        } else {
+        } 
+        else {
             sendMessage(new Message(MessageType.AUTH_FAIL, "Invalid login format"));
         }
     }
 
     private void handleQueue(Message message) {
+        // Add client to waiting queue
         gameManager.addToQueue(this, message.getContent());
     }
 
     private void handleMove(Message message) {
+        // Forward the move to the current game session
         if (currentSession != null) {
             currentSession.handleMove(this, message.getMove());
         }
     }
 
     private void handleChat(Message message) {
+        // Forward the chat to the current game session
         if (currentSession != null) {
             message.setSender(username);
             currentSession.forwardChat(this, message);
@@ -156,27 +182,29 @@ public class ClientHandler extends Thread {
     }
 
     private void handlePlayAgain() {
+        // Forward the play again request to the current game session
         if (currentSession != null) {
             currentSession.handlePlayAgain(this);
         }
     }
 
     private void handleQuit() {
+        // Forward the quit request to the current game session
         if (currentSession != null) {
             currentSession.handleQuit(this);
         }
     }
 
     private void handleDisconnect() {
+        // Remove client from game manager
         gameManager.removeClient(this);
+        // If client is in a game session, treat as quitting
         if (currentSession != null) {
             currentSession.handleQuit(this);
         }
         try {
             socket.close();
-        } catch (Exception e) {
-            // ignore
-        }
+        } catch (Exception e) {}
     }
 
     public void sendMessage(Message message) {

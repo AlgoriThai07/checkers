@@ -18,8 +18,9 @@ public class GameManager {
         this.databaseManager = databaseManager;
     }
 
+    // Add client to the queue based on the game mode (AI, LOCAL, or PVP)
     public synchronized void addToQueue(ClientHandler client, String mode) {
-        // If user choose AI mode
+        // If choose AI mode
         if ("AI".equalsIgnoreCase(mode)) {
             // Create an AI game immediately
             AIPlayer aiPlayer = new AIPlayer();
@@ -30,15 +31,15 @@ public class GameManager {
             session.startGame();
             System.out.println("AI game started for " + client.getUsername());
         }
-        // If user choose local hot-seat mode
+        // If choose local mode
         else if ("LOCAL".equalsIgnoreCase(mode)) {
-            // Create a local game with no second client and no AI
+            // Create a local game
             GameSession session = new GameSession(client, null, null, this, databaseManager);
             activeSessions.add(session);
             session.startGame();
-            System.out.println("Local hot-seat game started for " + client.getUsername());
+            System.out.println("Local game started for " + client.getUsername());
         }
-        // If user choose vs human mode (online PVP)
+        // If choose vs human mode (online PVP)
         else {
             // Add to queue
             waitingQueue.add(client);
@@ -76,16 +77,15 @@ public class GameManager {
     }
 
     public synchronized void removeClient(ClientHandler client) {
+        // Remove client from active clients
         activeClients.remove(client);
+        // Remove client from queue
         waitingQueue.remove(client);
         // Notify any online friends that this user went offline
         notifyFriendsOfStatusChange(client);
     }
 
-    /**
-     * Send a FRIENDS_LIST_UPDATE to the given client.
-     * Format: "friend1:online,friend2:offline,friend3:online"
-     */
+    // Send friends list to a client
     public synchronized void sendFriendsListTo(ClientHandler client) {
         String[] friends = databaseManager.getFriends(client.getUsername());
         StringBuilder sb = new StringBuilder();
@@ -98,39 +98,41 @@ public class GameManager {
         client.sendMessage(msg);
     }
 
-    /**
-     * When a user comes online or goes offline, notify each of their friends
-     * who is currently online so they can refresh their friends list.
-     */
+    // Notify friends of status change
     private void notifyFriendsOfStatusChange(ClientHandler client) {
+        // Get all friends of the client
         String[] friends = databaseManager.getFriends(client.getUsername());
+        // For each friend, check if they are online
         for (String friendName : friends) {
             ClientHandler friendClient = getClientByUsername(friendName);
+            // If a friend is online, send them the updated friends list
             if (friendClient != null) {
                 sendFriendsListTo(friendClient);
             }
         }
     }
 
-    /**
-     * Handle an ADD_FRIEND request from a client.
-     */
     public synchronized void handleAddFriend(ClientHandler client, String friendUsername) {
+        // Check if friend username is valid
         if (friendUsername == null || friendUsername.trim().isEmpty()) {
-            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:Username cannot be empty"));
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR: Username cannot be empty"));
             return;
         }
+        // Check if friend username is the same as the client's username
         if (friendUsername.equals(client.getUsername())) {
-            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:You cannot add yourself"));
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR: You cannot add yourself"));
             return;
         }
+        // Check if friend username exists
         if (!databaseManager.userExists(friendUsername)) {
-            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:User not found"));
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR: User not found"));
             return;
         }
+        // Add friend to the database
         boolean success = databaseManager.addFriend(client.getUsername(), friendUsername);
+        // If friend is added successfully
         if (success) {
-            client.sendMessage(new Message(MessageType.ADD_FRIEND, "SUCCESS:" + friendUsername));
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "SUCCESS: " + friendUsername));
             // Refresh both users' friends lists
             sendFriendsListTo(client);
             ClientHandler friendClient = getClientByUsername(friendUsername);
@@ -138,15 +140,15 @@ public class GameManager {
                 sendFriendsListTo(friendClient);
             }
         } else {
-            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR:Could not add friend"));
+            client.sendMessage(new Message(MessageType.ADD_FRIEND, "ERROR: Could not add friend"));
         }
     }
 
-    /**
-     * Handle a REMOVE_FRIEND request from a client.
-     */
+    // Handle a REMOVE_FRIEND request from a client
     public synchronized void handleRemoveFriend(ClientHandler client, String friendUsername) {
+        // Remove friend from the database
         databaseManager.removeFriend(client.getUsername(), friendUsername);
+        // Send success response
         client.sendMessage(new Message(MessageType.REMOVE_FRIEND, "SUCCESS:" + friendUsername));
         // Refresh both users' friends lists
         sendFriendsListTo(client);
@@ -156,9 +158,7 @@ public class GameManager {
         }
     }
 
-    /**
-     * Check if a user is currently online (has an active client connection).
-     */
+    // Check if a user is currently online (has an active client connection)
     private boolean isUserOnline(String username) {
         for (ClientHandler client : activeClients) {
             if (username.equals(client.getUsername())) {
@@ -168,9 +168,7 @@ public class GameManager {
         return false;
     }
 
-    /**
-     * Check if a user is currently in an active game session.
-     */
+    // Check if a user is currently in an active game session
     private boolean isInGame(String username) {
         for (GameSession session : activeSessions) {
             if (session.hasPlayer(username)) return true;
@@ -178,31 +176,25 @@ public class GameManager {
         return false;
     }
 
-    /**
-     * Handle when a user sends a match invite to a friend.
-     */
+    // Handle when a user sends a match invite to a friend
     public synchronized void handleMatchInvite(ClientHandler sender, String targetUsername) {
+        // Get the target client by username
         ClientHandler targetClient = getClientByUsername(targetUsername);
+        // If target client is not online
         if (targetClient == null) {
             sender.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "offline"));
             return;
         }
-
+        // If target client is already in a game
         if (isInGame(targetUsername)) {
             sender.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "in_game"));
             return;
         }
-
-        // Remove sender from regular matchmaking queue just in case
-        waitingQueue.remove(sender);
-
         // Forward invite to receiver
         targetClient.sendMessage(new Message(MessageType.MATCH_INVITE, sender.getUsername()));
     }
 
-    /**
-     * Handle when sender cancels the match invite.
-     */
+    // Handle when sender cancels the match invite
     public synchronized void handleMatchInviteCancel(ClientHandler sender, String targetUsername) {
         ClientHandler targetClient = getClientByUsername(targetUsername);
         if (targetClient != null) {
@@ -210,9 +202,7 @@ public class GameManager {
         }
     }
 
-    /**
-     * Handle when receiver accepts the match invite.
-     */
+    // Handle when receiver accepts the match invite
     public synchronized void handleMatchInviteAccept(ClientHandler receiver, String senderUsername) {
         ClientHandler senderClient = getClientByUsername(senderUsername);
         if (senderClient == null) {
@@ -220,15 +210,8 @@ public class GameManager {
             receiver.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "offline"));
             return;
         }
-        
-        if (isInGame(senderUsername)) {
-            // Sender started another game
-            receiver.sendMessage(new Message(MessageType.MATCH_INVITE_RESPONSE, "in_game"));
-            return;
-        }
 
-        // Remove both from waiting queue if they are in it
-        waitingQueue.remove(senderClient);
+        // Remove receiver from waiting queue if they are in it
         waitingQueue.remove(receiver);
 
         // Notify sender that invite was accepted so they can close their modal
@@ -241,9 +224,7 @@ public class GameManager {
         System.out.println("Friend PVP game started: " + senderUsername + " vs " + receiver.getUsername());
     }
 
-    /**
-     * Handle when receiver declines the match invite.
-     */
+    // Handle when receiver declines the match invite
     public synchronized void handleMatchInviteDecline(ClientHandler receiver, String senderUsername) {
         ClientHandler senderClient = getClientByUsername(senderUsername);
         if (senderClient != null) {
@@ -251,9 +232,7 @@ public class GameManager {
         }
     }
 
-    /**
-     * Find an active ClientHandler by username.
-     */
+    // Find an active ClientHandler by username
     private ClientHandler getClientByUsername(String username) {
         for (ClientHandler client : activeClients) {
             if (username.equals(client.getUsername())) {

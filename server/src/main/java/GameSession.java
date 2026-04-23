@@ -44,6 +44,7 @@ public class GameSession {
         }
     }
 
+    // Check if the player is in the game
     public boolean hasPlayer(String username) {
         if (redPlayer != null && username.equals(redPlayer.getUsername()))
             return true;
@@ -214,7 +215,7 @@ public class GameSession {
                     if (fullAiMove == null) {
                         fullAiMove = aiMove;
                     }
-
+                    // Save state before move
                     if (isFirstMoveOfTurn) {
                         history.add(gameState.deepCopy());
                         gameState.setHistoryCount(history.size());
@@ -278,15 +279,13 @@ public class GameSession {
         }
     }
 
-    // ========================================
-    // GAME OVER LOGIC
-    // ========================================
-
+    // Check if the game is over
     private void checkGameOver() {
         PieceType[][] board = gameState.getBoard();
         boolean redExists = false;
         boolean blackExists = false;
 
+        // Iterate through the board to check if there are any pieces left
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 if (board[r][c] == PieceType.RED || board[r][c] == PieceType.RED_KING) {
@@ -305,6 +304,7 @@ public class GameSession {
         // Draw: checked via no valid moves in switchTurnAndBroadcast
     }
 
+    // Send game update to both players
     private void broadcastGameUpdate() {
         Message update = new Message(MessageType.GAME_UPDATE, gameState);
         redPlayer.sendMessage(update);
@@ -313,6 +313,7 @@ public class GameSession {
         }
     }
 
+    // Send game over message to both players
     private void broadcastGameOver() {
         Message gameOver = new Message(MessageType.GAME_OVER, gameState);
         redPlayer.sendMessage(gameOver);
@@ -337,31 +338,30 @@ public class GameSession {
         }
     }
 
+    // Send stats update to the player
     private void sendStatsUpdate(ClientHandler player) {
-        if (player == null)
-            return;
+        if (player == null) return;
         User stats = databaseManager.getStats(player.getUsername());
         if (stats != null) {
+            // Format: wins:losses:draws
             String payload = stats.getWins() + ":" + stats.getLosses() + ":" + stats.getDraws();
             Message statsMsg = new Message(MessageType.STATS_UPDATE, payload);
             player.sendMessage(statsMsg);
         }
     }
 
-    // ========================================
-    // VALID MOVE CALCULATION (Static — reused by AIPlayer)
-    // ========================================
-
+    
+    // Calculate all valid moves for a color
     public static List<Move> calculateValidMoves(PieceType[][] board, String color) {
         List<Move> jumps = new ArrayList<>();
         List<Move> simpleMoves = new ArrayList<>();
 
+        // Iterate through the board to find all pieces of the current color
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 PieceType piece = board[r][c];
                 if (!belongsTo(piece, color))
                     continue;
-
                 // Find jump sequences for this piece
                 List<Move> pieceJumps = findAllJumpsFromPiece(board, r, c, piece);
                 jumps.addAll(pieceJumps);
@@ -407,51 +407,62 @@ public class GameSession {
         return piece == PieceType.RED_KING || piece == PieceType.BLACK_KING;
     }
 
+    // Get row directions based on piece type
     static int[] getRowDirections(PieceType piece) {
+        // Kings can move in both directions
         if (isKing(piece)) {
             return new int[] { -1, 1 };
         }
+        // Red moves toward increasing rows
         if (piece == PieceType.RED) {
-            return new int[] { 1 }; // Red moves toward increasing rows
+            return new int[] { 1 }; 
         }
-        return new int[] { -1 }; // Black moves toward decreasing rows
+        // Black moves toward decreasing rows
+        return new int[] { -1 };
     }
 
+    // Find simple moves for a piece (non-jumps)
     private static List<Move> findSimpleMoves(PieceType[][] board, int row, int col, PieceType piece) {
         List<Move> moves = new ArrayList<>();
         int[] rowDirs = getRowDirections(piece);
         int[] colDirs = { -1, 1 };
 
+        // Check all 4 directions for simple moves
         for (int dr : rowDirs) {
             for (int dc : colDirs) {
                 int nr = row + dr;
                 int nc = col + dc;
+                // If in bounds and empty, add as simple move
                 if (inBounds(nr, nc) && board[nr][nc] == PieceType.EMPTY) {
                     moves.add(new Move(new Position(row, col), new Position(nr, nc)));
                 }
             }
         }
         return moves;
-    }    /**
-     * Find single-step jumps from (startRow, startCol).
-     * No chain — each jump captures exactly one piece.
-     */
+    }
+
+    // Find single step jumps from (startRow, startCol)
     private static List<Move> findAllJumpsFromPiece(PieceType[][] board, int startRow, int startCol, PieceType piece) {
         List<Move> results = new ArrayList<>();
         String color = getColor(piece);
         int[] rowDirs = getRowDirections(piece);
         int[] colDirs = { -1, 1 };
 
+        // Check 4 directions
         for (int dr : rowDirs) {
             for (int dc : colDirs) {
+                // Middle position (jump over)
                 int midRow = startRow + dr;
                 int midCol = startCol + dc;
+                // Landing position
                 int landRow = startRow + 2 * dr;
                 int landCol = startCol + 2 * dc;
 
+                // Cannot jump out of board
                 if (!inBounds(landRow, landCol))
                     continue;
 
+                // If middle is opponent and landing is empty, then valid jump
                 if (isOpponent(board[midRow][midCol], color)
                         && board[landRow][landCol] == PieceType.EMPTY) {
                     List<Position> captured = new ArrayList<>();
@@ -470,13 +481,12 @@ public class GameSession {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 
-    // ========================================
-    // CHAT
-    // ========================================
-
+    // Forward chat to the other player
     public void forwardChat(ClientHandler sender, Message chatMessage) {
+        // If AI or local game, do not forward chat
         if (isAIGame || isLocalGame)
             return;
+        // Forward the chat message to the other player
         if (sender == redPlayer && blackPlayer != null) {
             blackPlayer.sendMessage(chatMessage);
         } else {
@@ -484,10 +494,7 @@ public class GameSession {
         }
     }
 
-    // ========================================
-    // DRAW OFFER / ACCEPT / DECLINE
-    // ========================================
-
+    // Forward draw offer to the other player
     public void forwardDrawOffer(ClientHandler sender) {
         Message drawOffer = new Message(MessageType.DRAW_OFFER, sender.getUsername() + " offers a draw");
         if (sender == redPlayer && blackPlayer != null) {
@@ -497,13 +504,16 @@ public class GameSession {
         }
     }
 
+    // Handle draw accept
     public void handleDrawAccept(ClientHandler sender) {
         // Set game status to DRAW and broadcast game over to both players
         gameState.setStatus("DRAW");
         broadcastGameOver();
+        // Remove session from game manager
         gameManager.removeSession(this);
     }
 
+    // Handle draw decline
     public void handleDrawDecline(ClientHandler sender) {
         // Notify the original offerer that the draw was declined
         Message decline = new Message(MessageType.DRAW_DECLINE, "Draw offer declined");
@@ -514,17 +524,15 @@ public class GameSession {
         }
     }
 
-    // ========================================
-    // PLAY AGAIN / QUIT
-    // ========================================
-
-    public synchronized void handlePlayAgain(ClientHandler sender) {
+    // Handle play again
+    public void handlePlayAgain(ClientHandler sender) {
+        // Mark the sender as wanting to play again
         if (sender == redPlayer) {
             redWantsPlayAgain = true;
         } else if (sender == blackPlayer) {
             blackWantsPlayAgain = true;
         }
-
+        // Start new game if both players want to play again
         if ((isAIGame || isLocalGame) && redWantsPlayAgain) {
             startGame();
         } else if (!isAIGame && !isLocalGame && redWantsPlayAgain && blackWantsPlayAgain) {
@@ -533,6 +541,7 @@ public class GameSession {
     }
 
     public void handleQuit(ClientHandler sender) {
+        // Send quit message to the other player
         Message quitMsg = new Message(MessageType.QUIT, "Opponent left the game");
 
         // Record forfeit result for online PvP games only
@@ -549,28 +558,34 @@ public class GameSession {
                 sendStatsUpdate(blackPlayer);
             }
         }
-
+        // If in PvP game and red player quits
         if (sender == redPlayer && blackPlayer != null) {
             blackPlayer.sendMessage(quitMsg);
             blackPlayer.setCurrentSession(null);
-        } else if (sender == blackPlayer) {
+        }
+        // If in PvP game and black player quits
+        else if (sender == blackPlayer) {
             redPlayer.sendMessage(quitMsg);
         }
+        // Set current session to null for sender and remove session from game manager
         sender.setCurrentSession(null);
-        if (redPlayer != null)
-            redPlayer.setCurrentSession(null);
         gameManager.removeSession(this);
     }
 
     public synchronized void handleUndo(ClientHandler sender) {
+        // For AI game, undo last two moves (opponent & current player)
         if (isAIGame) {
             if (history.size() < 2) return;
+            // Remove opponent's last move
             history.remove(history.size() - 1);
+            // Remove current player's last move
             GameState previousState = history.remove(history.size() - 1);
             this.gameState = previousState;
             this.isFirstMoveOfTurn = true;
             broadcastGameUpdate();
-        } else if (isLocalGame) {
+        }
+        // For local game, undo last move
+        else if (isLocalGame) {
             if (history.isEmpty()) return;
             GameState previousState = history.remove(history.size() - 1);
             this.gameState = previousState;
