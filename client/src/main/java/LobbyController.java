@@ -147,20 +147,20 @@ public class LobbyController {
         statsRow.setMaxWidth(Double.MAX_VALUE);
 
         VBox winsBox = createStatCircle("W", "Wins", "0", "#2ecc71");
-        VBox lossesBox = createStatCircle("L", "Losses", "0", "#e74c3c");
         VBox drawsBox = createStatCircle("D", "Draws", "0", "#95a5a6");
+        VBox lossesBox = createStatCircle("L", "Losses", "0", "#e74c3c");
 
         // Store count labels for updating
         winsCountLabel = (Label) winsBox.getChildren().get(2);
-        lossesCountLabel = (Label) lossesBox.getChildren().get(2);
         drawsCountLabel = (Label) drawsBox.getChildren().get(2);
+        lossesCountLabel = (Label) lossesBox.getChildren().get(2);
 
         // Make each stat box grow equally to fill the row
         HBox.setHgrow(winsBox, Priority.ALWAYS);
-        HBox.setHgrow(lossesBox, Priority.ALWAYS);
         HBox.setHgrow(drawsBox, Priority.ALWAYS);
+        HBox.setHgrow(lossesBox, Priority.ALWAYS);
 
-        statsRow.getChildren().addAll(winsBox, lossesBox, drawsBox);
+        statsRow.getChildren().addAll(winsBox, drawsBox, lossesBox);
 
         // Game buttons - VERTICAL
         VBox buttonsBox = new VBox(15);
@@ -175,13 +175,13 @@ public class LobbyController {
         playBotButton.setOnAction(e -> handleQuickPlay());
         playBotButton.setStyle(buttonStyle);
 
-        Button playLocalButton = new Button("PLAY LOCAL VS FRIEND");
+        Button playLocalButton = new Button("PLAY LOCAL");
         playLocalButton.setPrefHeight(70);
         playLocalButton.setMaxWidth(Double.MAX_VALUE);
         playLocalButton.setOnAction(e -> handlePlayWithFriend());
         playLocalButton.setStyle(buttonStyle);
 
-        Button playOnlineButton = new Button("PLAY ONLINE VS FRIEND");
+        Button playOnlineButton = new Button("PLAY ONLINE");
         playOnlineButton.setPrefHeight(70);
         playOnlineButton.setMaxWidth(Double.MAX_VALUE);
         playOnlineButton.setOnAction(e -> handleCreateGame());
