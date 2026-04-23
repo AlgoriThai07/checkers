@@ -507,7 +507,7 @@ public class GameController {
         // Handle local game draw offer
         if (isLocalGame) {
             showCustomModal(
-                "Draw",
+                "Draw!",
                 "It's a draw!",
                 true,
                 "↻ Play Again",
@@ -523,7 +523,7 @@ public class GameController {
         // AI auto accept draw offer
         if (gameState != null && (gameState.getBlackPlayer().equals("AI") || gameState.getRedPlayer().equals("AI"))) {
             showCustomModal(
-                "Draw Accepted",
+                "Draw!",
                 "The AI has accepted your draw offer.",
                 true,
                 "↻ Play Again",
@@ -571,7 +571,7 @@ public class GameController {
                 app.send(new Message(MessageType.QUIT));
                 app.switchToScene("lobby");
             },
-            () -> { /* cancel */  }
+            () -> {}
         );
     }
 
@@ -611,8 +611,6 @@ public class GameController {
         myColor = gameState.getRedPlayer().equals(app.getUsername()) ? "RED" : "BLACK";
 
         String myDisplayColor = myColor.equals("RED") ? "Green" : "Purple";
-        String opponentDisplayColor = myColor.equals("RED") ? "Purple" : "Green";
-
         // Player 1 label - always at the bottom
         if (myColor.equals("RED")) {
             opponentUsername = gameState.getBlackPlayer();
@@ -623,8 +621,6 @@ public class GameController {
             p1NameLabel.setText(app.getUsername() + " (Purple)");
             p2NameLabel.setText(opponentUsername + " (Green)");
         }
-
-
 
         updateTurnLabel();
         updateControlButtons();
@@ -749,7 +745,7 @@ public class GameController {
         dialogRoot.setPadding(new Insets(40, 50, 40, 50));
         dialogRoot.setStyle("-fx-background-color: #111419; -fx-background-radius: 12; -fx-border-color: rgba(0,240,255,0.3); -fx-border-radius: 12; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,240,255,0.2), 25, 0, 0, 0);");
 
-        // Icon with trophy for win, flag for draw
+        // Icon with star for win, flag for draw
         Label iconLabel = new Label(isGoldIcon ? "★" : "⚑");
         iconLabel.setStyle("-fx-font-size: 48; -fx-text-fill: #FFD166; -fx-background-color: #1a2030; -fx-background-radius: 50; -fx-padding: 20 28 20 28;");
         iconLabel.setAlignment(Pos.CENTER);
